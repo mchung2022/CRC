@@ -946,6 +946,18 @@ body {
   100% { opacity: 0.6; }
 }
 
+/* Autoplay Visual Countdown Bar */
+.autoplay-countdown-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-amber), var(--primary-cyan));
+  z-index: 500;
+  box-shadow: 0 0 10px var(--accent-amber);
+}
+
 .jump-input {
   width: 50px;
   text-align: center;

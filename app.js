@@ -1,6 +1,6 @@
 /**
  * CRC (兒童權利公約) 互動簡報與素養試題系統主程式
- * 全域架構 - 支援離線極速輪播與跨瀏覽器相容
+ * 全域極速輪播與即時倒數動畫引擎
  */
 
 // 1. 全域變數定義
@@ -18,7 +18,7 @@ window.studentInfo = {
 
 const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycby2GlXyEi1w3YbB8IJ7U66P6UOenOhdpayaNo9Wy8xLUZdfCY9bn4y2OfIkoFwhkcFv/exec";
 
-// 2. 全域簡報與輪播控制核心函式 (置於最頂層)
+// 2. 全域簡報與輪播控制核心函式
 
 // 全域切換頁面
 window.goToSlide = function(index) {
@@ -56,10 +56,14 @@ window.goToSlide = function(index) {
 
   window.updateNavButtonsUI();
   window.renderSidebar(searchInput ? searchInput.value : "");
+
+  if (window.isAutoplay) {
+    window.triggerCountdownAnimation();
+  }
 };
 
-// 下一頁
-window.nextSlide = function() {
+// 下一頁 (isManual = true 時才重設手動計時)
+window.nextSlide = function(isManual = false) {
   if (typeof slidesData === 'undefined') return;
   const totalSlides = slidesData.length;
 
@@ -70,13 +74,13 @@ window.nextSlide = function() {
     window.goToSlide(0);
   }
 
-  if (window.isAutoplay) {
+  if (isManual && window.isAutoplay) {
     window.resetAutoplayTimer();
   }
 };
 
 // 上一頁
-window.prevSlide = function() {
+window.prevSlide = function(isManual = false) {
   if (typeof slidesData === 'undefined') return;
   const totalSlides = slidesData.length;
 
@@ -86,7 +90,7 @@ window.prevSlide = function() {
     window.goToSlide(totalSlides - 1);
   }
 
-  if (window.isAutoplay) {
+  if (isManual && window.isAutoplay) {
     window.resetAutoplayTimer();
   }
 };
@@ -100,17 +104,17 @@ window.toggleAutoplay = function() {
   }
 };
 
-// 啟動自動輪播
+// 啟動自動輪播 (採用精確的 setInterval 與視覺倒數條)
 window.startAutoplay = function() {
   window.isAutoplay = true;
   window.updateAutoplayUI();
 
   // 立即跳到下一頁呈現即時響應
-  window.nextSlide();
+  window.nextSlide(false);
 
   if (window.autoplayTimer) clearInterval(window.autoplayTimer);
   window.autoplayTimer = setInterval(() => {
-    window.nextSlide();
+    window.nextSlide(false);
   }, window.autoplaySpeed);
 
   if (typeof window.showToast === 'function') {
@@ -128,19 +132,40 @@ window.stopAutoplay = function() {
   }
   window.updateAutoplayUI();
 
+  // 清除視覺倒數條
+  const countdownBar = document.getElementById("autoplayCountdownBar");
+  if (countdownBar) {
+    countdownBar.style.transition = "none";
+    countdownBar.style.width = "0%";
+  }
+
   if (typeof window.showToast === 'function') {
     window.showToast("❚❚ 自動輪播已暫停");
   }
 };
 
-// 重置輪播計時器
+// 手動操作時重置計時器
 window.resetAutoplayTimer = function() {
   if (window.isAutoplay) {
     if (window.autoplayTimer) clearInterval(window.autoplayTimer);
+    window.triggerCountdownAnimation();
     window.autoplayTimer = setInterval(() => {
-      window.nextSlide();
+      window.nextSlide(false);
     }, window.autoplaySpeed);
   }
+};
+
+// 視覺倒數進度條動畫
+window.triggerCountdownAnimation = function() {
+  const countdownBar = document.getElementById("autoplayCountdownBar");
+  if (!countdownBar) return;
+
+  countdownBar.style.transition = "none";
+  countdownBar.style.width = "0%";
+  void countdownBar.offsetWidth; // 強制 DOM 重繪
+  const sec = window.autoplaySpeed / 1000;
+  countdownBar.style.transition = `width ${sec}s linear`;
+  countdownBar.style.width = "100%";
 };
 
 // 更新按鈕禁用與亮顯狀態 UI
@@ -179,6 +204,7 @@ window.updateAutoplayUI = function() {
     if (autoplayStatusBadge) {
       autoplayStatusBadge.classList.add("active");
     }
+    window.triggerCountdownAnimation();
   } else {
     if (autoplayBtn) {
       autoplayBtn.classList.remove("active");
@@ -448,6 +474,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // 綁定按鈕點擊為手動模式 (isManual = true)
+  const prevBtn = document.getElementById("prevBtn");
+  const stagePrevBtn = document.getElementById("stagePrevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const stageNextBtn = document.getElementById("stageNextBtn");
+
+  [prevBtn, stagePrevBtn].forEach((btn) => {
+    if (btn) btn.addEventListener("click", () => window.prevSlide(true));
+  });
+
+  [nextBtn, stageNextBtn].forEach((btn) => {
+    if (btn) btn.addEventListener("click", () => window.nextSlide(true));
+  });
+
   // 跳頁輸入
   if (jumpInput) {
     const handleJump = (e) => {
@@ -542,10 +582,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
 
     if (e.key === "ArrowLeft" || e.key === "PageUp") {
-      window.prevSlide();
+      window.prevSlide(true);
     } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " || e.key === "Enter") {
       e.preventDefault();
-      window.nextSlide();
+      window.nextSlide(true);
     } else if (e.key === "Home") {
       window.goToSlide(0);
       if (window.isAutoplay) window.resetAutoplayTimer();
