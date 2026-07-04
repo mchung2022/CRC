@@ -43,6 +43,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const searchInput = document.getElementById("searchInput");
 
+  // 強制登錄 Modal DOM
+  const mandatoryStudentModal = document.getElementById("mandatoryStudentModal");
+  const entryStudentName = document.getElementById("entryStudentName");
+  const entryStudentId = document.getElementById("entryStudentId");
+  const entryErrorAlert = document.getElementById("entryErrorAlert");
+  const headerStudentText = document.getElementById("headerStudentText");
+
   // 輪播控制 DOM
   const autoplayBtn = document.getElementById("autoplayBtn");
   const playPauseNavBtn = document.getElementById("playPauseNavBtn");
@@ -67,6 +74,53 @@ document.addEventListener("DOMContentLoaded", () => {
     sheetWebAppUrl.value = googleSheetEndpoint;
   }
 
+  // 檢查學生是否已填寫登錄資訊
+  function checkStudentLoginState() {
+    if (studentInfo.name && studentInfo.studentId) {
+      if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+      if (headerStudentText) {
+        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId})`;
+      }
+    } else {
+      if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+      if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
+      if (entryStudentId && studentInfo.studentId) entryStudentId.value = studentInfo.studentId;
+    }
+  }
+
+  // 提交強制登錄資訊
+  window.submitMandatoryStudentEntry = function() {
+    const name = entryStudentName ? entryStudentName.value.trim() : "";
+    const id = entryStudentId ? entryStudentId.value.trim() : "";
+
+    if (!name || !id) {
+      if (entryErrorAlert) entryErrorAlert.style.display = "flex";
+      if (!name && entryStudentName) entryStudentName.focus();
+      else if (!id && entryStudentId) entryStudentId.focus();
+      return;
+    }
+
+    if (entryErrorAlert) entryErrorAlert.style.display = "none";
+    studentInfo.name = name;
+    studentInfo.studentId = id;
+    localStorage.setItem("crc_student_name", name);
+    localStorage.setItem("crc_student_id", id);
+
+    if (headerStudentText) {
+      headerStudentText.textContent = `學生：${name} (${id})`;
+    }
+
+    if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+    window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
+  };
+
+  // 點擊 Header 按鈕修改個人資訊
+  window.editStudentInfo = function() {
+    if (entryStudentName) entryStudentName.value = studentInfo.name;
+    if (entryStudentId) entryStudentId.value = studentInfo.studentId;
+    if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+  };
+
   // 保存封面填寫的學生個人資訊
   window.saveStudentInfo = function() {
     const nameEl = document.getElementById("coverStudentName");
@@ -78,6 +132,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (idEl) {
       studentInfo.studentId = idEl.value.trim();
       localStorage.setItem("crc_student_id", studentInfo.studentId);
+    }
+    if (headerStudentText && (studentInfo.name || studentInfo.studentId)) {
+      headerStudentText.textContent = `學生：${studentInfo.name || '未登錄'} (${studentInfo.studentId || '未填寫'})`;
     }
   };
 
@@ -359,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const score = correctCount * 10;
-    const name = studentInfo.name || "匿名學生";
+    const name = studentInfo.name || "學生";
     const className = studentInfo.studentId || "未填寫學號";
 
     const payload = {
@@ -379,9 +436,9 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).then(() => {
-      window.showToast(`🎉 恭喜！您已完成 10 題素養測驗，得分 ${score} 分！成績已自動同步至 Google Sheet！`);
+      window.showToast(`🎉 恭喜 ${name}！您已完成 10 題素養測驗，得分 ${score} 分！成績已自動同步至 Google Sheet！`);
     }).catch(() => {
-      window.showToast(`🎉 恭喜完成 10 題素養測驗，得分 ${score} 分！紀錄已發送至 Google Sheet。`);
+      window.showToast(`🎉 恭喜 ${name} 完成 10 題素養測驗，得分 ${score} 分！紀錄已發送至 Google Sheet。`);
     });
   };
 
@@ -703,7 +760,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 初始化預設啟動第一頁
+  // 檢查登錄狀態並初始化預設啟動第一頁
+  checkStudentLoginState();
   renderSidebar();
   renderSlide(0);
 });

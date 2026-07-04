@@ -1109,6 +1109,63 @@ body {
   }
 }
 
+/* Student Login Card on Cover */
+.student-login-card {
+  width: 100%;
+  max-width: 780px;
+  background: var(--bg-card);
+  border: 1px solid var(--primary-cyan);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin: 1rem 0 1.5rem 0;
+  box-shadow: 0 8px 25px rgba(14, 165, 233, 0.15);
+  text-align: left;
+}
+
+.sl-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sl-input-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.sl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sl-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.sl-field input {
+  padding-left: 0.85rem !important;
+}
+
+.sl-status-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.6rem;
+}
+
+
 </style>
 </head>
 <body>
@@ -1120,6 +1177,11 @@ body {
       <div>CRC 兒童權利公約 <span>| 人權教育與素養實踐簡報</span></div>
     </div>
     <div class="nav-actions">
+      <!-- 學生身份顯示與修改按鈕 -->
+      <button class="btn-nav" id="studentHeaderBadge" onclick="window.editStudentInfo()" style="background:var(--bg-card); font-size:0.82rem; padding:4px 10px;">
+        <i class="fa-solid fa-user-check text-cyan"></i> <span id="headerStudentText">學生：未登錄</span>
+      </button>
+
       <!-- 自動輪播控制按鈕與速率選擇 -->
       <div class="autoplay-control-group">
         <button class="btn-icon" id="autoplayBtn" onclick="window.toggleAutoplay()" title="開啟/暫停 自動輪播 (Auto-Play)">
@@ -1221,6 +1283,41 @@ body {
 
   </div>
 
+  <!-- Mandatory Student Entry Modal (開啟時必須先輸入姓名學號) -->
+  <div class="modal-overlay active" id="mandatoryStudentModal" style="z-index: 2000; backdrop-filter: blur(12px); background: rgba(11, 15, 25, 0.95);">
+    <div class="modal-content" style="max-width: 520px; height: auto; padding: 2rem; border-color: var(--primary-cyan); box-shadow: 0 0 40px var(--primary-cyan-glow);">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div class="badge-pill" style="margin-bottom: 0.5rem;"><i class="fa-solid fa-shield-halved"></i> 人權教育登錄入口</div>
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">兒童權利公約 (CRC) 簡報與素養測驗</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">請先填寫您的姓名與學號以進入投影片學習與進行素養挑戰</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div class="sl-field">
+          <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-user text-cyan"></i> 學生姓名 <span style="color:var(--accent-red)">*</span>：</label>
+          <input type="text" id="entryStudentName" class="search-input" placeholder="請輸入姓名（例如：張小明）" style="padding-left: 1rem; font-size: 1rem; height: 44px;">
+        </div>
+
+        <div class="sl-field">
+          <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-id-card text-cyan"></i> 學號 / 班級 <span style="color:var(--accent-red)">*</span>：</label>
+          <input type="text" id="entryStudentId" class="search-input" placeholder="請輸入學號與班級（例如：高一乙班 / 112005）" style="padding-left: 1rem; font-size: 1rem; height: 44px;">
+        </div>
+
+        <div id="entryErrorAlert" class="alert-box alert-danger" style="display: none; margin-top: 0;">
+          <i class="fa-solid fa-circle-exclamation"></i> 請完整填寫姓名與學號後再點擊進入投影片！
+        </div>
+
+        <button class="btn-nav" onclick="window.submitMandatoryStudentEntry()" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem;">
+          🚀 進入投影片開始學習
+        </button>
+      </div>
+      
+      <div style="font-size: 0.78rem; color: var(--text-dim); text-align: center; margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+        <i class="fa-solid fa-lock"></i> 完成 10 題素養試題後，系統將自動同步成績與答題紀錄至 Google 試算表。
+      </div>
+    </div>
+  </div>
+
   <!-- Overview Grid Modal -->
   <div class="modal-overlay" id="overviewModal">
     <div class="modal-content">
@@ -1296,7 +1393,7 @@ body {
   </div>
 
   <!-- Toast Notification Alert -->
-  <div id="toastNotification" style="position:fixed; bottom:80px; right:20px; z-index:2000; padding:12px 24px; border-radius:10px; background:var(--accent-green); color:#fff; font-weight:bold; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:none; opacity:0; transition:opacity 0.3s ease;">
+  <div id="toastNotification" style="position:fixed; bottom:80px; right:20px; z-index:3000; padding:14px 26px; border-radius:12px; background:var(--accent-green); color:#fff; font-weight:bold; box-shadow:0 10px 30px rgba(0,0,0,0.5); display:none; opacity:0; transition:opacity 0.3s ease;">
     <i class="fa-solid fa-circle-check"></i> <span id="toastText">成功傳送至 Google Sheet！</span>
   </div>
 
@@ -1312,7 +1409,7 @@ const slidesData = [
   {
     id: 1,
     category: "PART 1: 概述與核心精神",
-    tag: "簡報封面",
+    tag: "簡報封面與學生登錄",
     title: "兒童權利公約 (CRC) 簡介與素養實踐",
     subtitle: "Convention on the Rights of the Child - 50頁互動教學與情境思辨簡報",
     icon: "fa-book-open-reader",
@@ -1321,8 +1418,27 @@ const slidesData = [
       <div class="cover-hero">
         <div class="badge-pill"><i class="fa-solid fa-shield-halved"></i> 人權教育與素養實踐</div>
         <h1 class="cover-title">兒童權利公約 <span class="highlight">CRC</span> 深度導覽</h1>
-        <p class="cover-description">從「慈善保護對象」到「獨立權利主體」的範式轉移 | 完整 50 頁主題簡報與素養導向情境題庫</p>
-        <div class="cover-stats">
+        <p class="cover-description">從「慈善保護對象」到「獨立權利主體」的範式轉移 | 完整 50 頁主題簡報與 10 大素養試題</p>
+        
+        <!-- 學生姓名與學號填報登錄卡片 -->
+        <div class="student-login-card">
+          <div class="sl-card-title"><i class="fa-solid fa-user-pen text-cyan"></i> 請先登記您的姓名與學號（測驗完成將自動同步至 Google Sheet）</div>
+          <div class="sl-input-group">
+            <div class="sl-field">
+              <label for="coverStudentName"><i class="fa-solid fa-user"></i> 學生姓名：</label>
+              <input type="text" id="coverStudentName" class="search-input" placeholder="例如：張小明" onchange="window.saveStudentInfo()" oninput="window.saveStudentInfo()">
+            </div>
+            <div class="sl-field">
+              <label for="coverStudentId"><i class="fa-solid fa-id-card"></i> 學號 / 班級：</label>
+              <input type="text" id="coverStudentId" class="search-input" placeholder="例如：高一乙班 / 112005" onchange="window.saveStudentInfo()" oninput="window.saveStudentInfo()">
+            </div>
+          </div>
+          <div class="sl-status-text" id="studentLoginStatus">
+            <i class="fa-solid fa-circle-check text-green"></i> 資訊填寫後，完成 10 題素養試題系統將自動將成績與答題紀錄同步至 Google 試算表。
+          </div>
+        </div>
+
+        <div class="cover-stats" style="margin-top: 1.5rem;">
           <div class="stat-card">
             <span class="stat-num">1989</span>
             <span class="stat-label">聯合國通過年份</span>
@@ -1333,7 +1449,7 @@ const slidesData = [
           </div>
           <div class="stat-card">
             <span class="stat-num">4</span>
-            <span class="stat-label">三大原則 (4Ps)</span>
+            <span class="stat-label">核心原則 (4Ps)</span>
           </div>
           <div class="stat-card">
             <span class="stat-num">10</span>
@@ -2540,13 +2656,11 @@ const slidesData = [
           </div>
         </div>
         <div class="info-card">
-          <h3><i class="fa-solid fa-circle-play"></i> 下列 10 題素養情境實作指引</h3>
-          <p>每張情境題均包含：</p>
+          <h3><i class="fa-solid fa-cloud-arrow-up text-cyan"></i> 自動同步 Google Sheet 機制說明</h3>
+          <p>本模組包含 10 題素養情境實作試題：</p>
           <ul class="styled-list">
-            <li><strong>真實案例情境描述</strong></li>
-            <li><strong>四選一單選題試驗</strong></li>
-            <li><strong>即時答案反饋與評量分析</strong></li>
-            <li><strong>CRC 原則詳細法理剖析</strong></li>
+            <li>當您完成第 10 題回答後，系統將<strong>自動將您的姓名、學號、總得分與詳細答題紀錄同步發送至 Google 試算表</strong>。</li>
+            <li>若您尚未填寫姓名學號，請回首頁第 1 頁填寫，或點擊右上角 `📊` 按鈕填報。</li>
           </ul>
         </div>
       </div>
@@ -2631,7 +2745,7 @@ const slidesData = [
     id: 39,
     category: "PART 5: 素養導向情境題",
     tag: "素養題 04",
-    title: "【素養情境題 4】特殊教育學童課堂融入與禁止歧視",
+    title: "【素養情境題 4】特殊需求學生課堂融入與禁止歧視",
     subtitle: "合理調整義務 vs 禁止歧視原則 (Article 2)",
     icon: "fa-wheelchair-move",
     type: "quiz",
@@ -2780,7 +2894,7 @@ const slidesData = [
   {
     id: 45,
     category: "PART 5: 素養導向情境題",
-    tag: "素養題 10",
+    tag: "素養題 10 (完成將自動同步成績)",
     title: "【素養情境題 10】兒少社群發表公共議題言論",
     subtitle: "網路言論自由 vs 資訊與表達自由 (Article 13)",
     icon: "fa-hashtag",
@@ -2978,14 +3092,22 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSlideIndex = 0;
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
+  let hasAutoSubmitted = false; // 是否已自動同步至 Google Sheet
+
+  // 學生個人資訊 (姓名與學號)
+  let studentInfo = {
+    name: localStorage.getItem("crc_student_name") || "",
+    studentId: localStorage.getItem("crc_student_id") || ""
+  };
 
   // 自動輪播狀態
   let isAutoplay = false;
   let autoplayTimer = null;
   let autoplaySpeed = 5000; // 預設 5 秒
 
-  // 預設與使用者設定的 Google Apps Script Web App URL
-  let googleSheetEndpoint = localStorage.getItem("crc_google_sheet_url") || "https://script.google.com/macros/s/AKfycbz_demo_crc_endpoint/exec";
+  // 使用者部署的官方 Google Apps Script Web App URL
+  const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycby2GlXyEi1w3YbB8IJ7U66P6UOenOhdpayaNo9Wy8xLUZdfCY9bn4y2OfIkoFwhkcFv/exec";
+  let googleSheetEndpoint = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
 
   // DOM 元素引用
   const slideContainer = document.getElementById("slideCardWrapper");
@@ -3008,6 +3130,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const searchInput = document.getElementById("searchInput");
 
+  // 強制登錄 Modal DOM
+  const mandatoryStudentModal = document.getElementById("mandatoryStudentModal");
+  const entryStudentName = document.getElementById("entryStudentName");
+  const entryStudentId = document.getElementById("entryStudentId");
+  const entryErrorAlert = document.getElementById("entryErrorAlert");
+  const headerStudentText = document.getElementById("headerStudentText");
+
   // 輪播控制 DOM
   const autoplayBtn = document.getElementById("autoplayBtn");
   const playPauseNavBtn = document.getElementById("playPauseNavBtn");
@@ -3028,9 +3157,73 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
   if (jumpInput) jumpInput.max = totalSlides;
-  if (sheetWebAppUrl && localStorage.getItem("crc_google_sheet_url")) {
-    sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url");
+  if (sheetWebAppUrl) {
+    sheetWebAppUrl.value = googleSheetEndpoint;
   }
+
+  // 檢查學生是否已填寫登錄資訊
+  function checkStudentLoginState() {
+    if (studentInfo.name && studentInfo.studentId) {
+      if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+      if (headerStudentText) {
+        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId})`;
+      }
+    } else {
+      if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+      if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
+      if (entryStudentId && studentInfo.studentId) entryStudentId.value = studentInfo.studentId;
+    }
+  }
+
+  // 提交強制登錄資訊
+  window.submitMandatoryStudentEntry = function() {
+    const name = entryStudentName ? entryStudentName.value.trim() : "";
+    const id = entryStudentId ? entryStudentId.value.trim() : "";
+
+    if (!name || !id) {
+      if (entryErrorAlert) entryErrorAlert.style.display = "flex";
+      if (!name && entryStudentName) entryStudentName.focus();
+      else if (!id && entryStudentId) entryStudentId.focus();
+      return;
+    }
+
+    if (entryErrorAlert) entryErrorAlert.style.display = "none";
+    studentInfo.name = name;
+    studentInfo.studentId = id;
+    localStorage.setItem("crc_student_name", name);
+    localStorage.setItem("crc_student_id", id);
+
+    if (headerStudentText) {
+      headerStudentText.textContent = `學生：${name} (${id})`;
+    }
+
+    if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+    window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
+  };
+
+  // 點擊 Header 按鈕修改個人資訊
+  window.editStudentInfo = function() {
+    if (entryStudentName) entryStudentName.value = studentInfo.name;
+    if (entryStudentId) entryStudentId.value = studentInfo.studentId;
+    if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+  };
+
+  // 保存封面填寫的學生個人資訊
+  window.saveStudentInfo = function() {
+    const nameEl = document.getElementById("coverStudentName");
+    const idEl = document.getElementById("coverStudentId");
+    if (nameEl) {
+      studentInfo.name = nameEl.value.trim();
+      localStorage.setItem("crc_student_name", studentInfo.name);
+    }
+    if (idEl) {
+      studentInfo.studentId = idEl.value.trim();
+      localStorage.setItem("crc_student_id", studentInfo.studentId);
+    }
+    if (headerStudentText && (studentInfo.name || studentInfo.studentId)) {
+      headerStudentText.textContent = `學生：${studentInfo.name || '未登錄'} (${studentInfo.studentId || '未填寫'})`;
+    }
+  };
 
   // 全域換頁函式 (提供 HTML onclick 與 EventListeners 調用)
   window.goToSlide = function(index) {
@@ -3159,6 +3352,16 @@ document.addEventListener("DOMContentLoaded", () => {
       renderContentSlide(slide);
     }
 
+    // 如果回到 Slide 1，帶入先前保存的姓名學號
+    if (slide.id === 1) {
+      setTimeout(() => {
+        const nameEl = document.getElementById("coverStudentName");
+        const idEl = document.getElementById("coverStudentId");
+        if (nameEl && studentInfo.name) nameEl.value = studentInfo.name;
+        if (idEl && studentInfo.studentId) idEl.value = studentInfo.studentId;
+      }, 50);
+    }
+
     // 重新觸發換頁淡入過渡動畫
     slideContainer.classList.remove("slide-anim");
     void slideContainer.offsetWidth; // 強制 DOM 重繪
@@ -3255,7 +3458,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // 4. 處理測驗選擇
+  // 4. 處理測驗選擇與全答完自動串接 Google Sheet
   window.handleQuizSelect = function (slideId, optionIndex) {
     if (userQuizAnswers[slideId]) return; // 已回答過
 
@@ -3270,10 +3473,68 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 重新渲染畫面呈現解析
     renderSlide(currentSlideIndex);
+
+    // 檢查是否已完成全部 10 題素養試題
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    const answeredCount = Object.keys(userQuizAnswers).length;
+
+    if (answeredCount >= quizSlides.length && !hasAutoSubmitted) {
+      hasAutoSubmitted = true;
+      // 延遲 1.5 秒讓使用者看到第 10 題解析後自動同步
+      setTimeout(() => {
+        window.autoSubmitQuizToGoogleSheet();
+      }, 1500);
+    }
+  };
+
+  // 當全選題完成時，自動發送至 Google Sheet
+  window.autoSubmitQuizToGoogleSheet = function() {
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    let correctCount = 0;
+    let quizDetails = [];
+    quizSlides.forEach((s) => {
+      const ans = userQuizAnswers[s.id];
+      if (ans) {
+        if (ans.isCorrect) correctCount++;
+        quizDetails.push(`第${s.id}頁:${ans.isCorrect ? '正確' : '錯誤'}`);
+      } else {
+        quizDetails.push(`第${s.id}頁:未作答`);
+      }
+    });
+
+    const score = correctCount * 10;
+    const name = studentInfo.name || "學生";
+    const className = studentInfo.studentId || "未填寫學號";
+
+    const payload = {
+      name: name,
+      className: className,
+      score: `${score} 分`,
+      correctCount: correctCount,
+      feedback: "完成全部 10 題素養測驗（自動同步）",
+      details: quizDetails.join("; ")
+    };
+
+    const targetUrl = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
+
+    fetch(targetUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      window.showToast(`🎉 恭喜 ${name}！您已完成 10 題素養測驗，得分 ${score} 分！成績已自動同步至 Google Sheet！`);
+    }).catch(() => {
+      window.showToast(`🎉 恭喜 ${name} 完成 10 題素養測驗，得分 ${score} 分！紀錄已發送至 Google Sheet。`);
+    });
   };
 
   // 5. Google Sheet 串接對話框控制與資料計算
   window.openGoogleSheetModal = function() {
+    // 預先填入封面記錄的姓名學號
+    if (sheetStudentName && studentInfo.name) sheetStudentName.value = studentInfo.name;
+    if (sheetClassName && studentInfo.studentId) sheetClassName.value = studentInfo.studentId;
+
     // 計算測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
     let correctCount = 0;
@@ -3298,6 +3559,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sheetQuizDetailDisplay) {
       sheetQuizDetailDisplay.textContent = `已完成 ${answeredCount} / 10 題測驗，答對 ${correctCount} 題`;
     }
+    if (sheetWebAppUrl) {
+      sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
+    }
 
     if (googleSheetModal) googleSheetModal.classList.add("active");
   };
@@ -3316,14 +3580,14 @@ document.addEventListener("DOMContentLoaded", () => {
       toastNotification.style.opacity = "0";
       setTimeout(() => {
         toastNotification.style.display = "none";
-      }, 300);
-    }, 3500);
+      }, 5000);
+    }, 5000);
   };
 
   // 傳送資料至 Google Sheet
   window.submitDataToGoogleSheet = function() {
-    const name = sheetStudentName ? sheetStudentName.value.trim() : "";
-    const className = sheetClassName ? sheetClassName.value.trim() : "";
+    const name = sheetStudentName ? sheetStudentName.value.trim() : studentInfo.name;
+    const className = sheetClassName ? sheetClassName.value.trim() : studentInfo.studentId;
     const feedback = sheetFeedbackText ? sheetFeedbackText.value.trim() : "";
     const customUrl = sheetWebAppUrl ? sheetWebAppUrl.value.trim() : "";
 
@@ -3333,10 +3597,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const targetUrl = customUrl || googleSheetEndpoint;
-    if (customUrl) {
-      localStorage.setItem("crc_google_sheet_url", customUrl);
-    }
+    const targetUrl = customUrl || DEFAULT_GAS_URL;
+    localStorage.setItem("crc_google_sheet_url", targetUrl);
 
     // 彙整測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
@@ -3376,16 +3638,15 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify(payload)
     }).then(() => {
       window.closeGoogleSheetModal();
-      window.showToast("🎉 成功傳送學習紀錄與成績至 Google Sheet！");
+      window.showToast("🎉 成功傳送學習紀錄與成績至您的 Google Sheet 試算表！");
       if (submitToSheetBtn) {
         submitToSheetBtn.disabled = false;
         submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
       }
     }).catch((err) => {
       console.error("Google Sheet 提交錯誤:", err);
-      // no-cors 下有時跨網域仍成功寫入
       window.closeGoogleSheetModal();
-      window.showToast("🎉 已發送資料至 Google Sheet！");
+      window.showToast("🎉 已發送資料至您的 Google Sheet 試算表！");
       if (submitToSheetBtn) {
         submitToSheetBtn.disabled = false;
         submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
@@ -3586,7 +3847,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 初始化預設啟動第一頁
+  // 檢查登錄狀態並初始化預設啟動第一頁
+  checkStudentLoginState();
   renderSidebar();
   renderSlide(0);
 });
