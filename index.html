@@ -19,6 +19,19 @@
       <div>CRC 兒童權利公約 <span>| 人權教育與素養實踐簡報</span></div>
     </div>
     <div class="nav-actions">
+      <!-- 自動輪播控制按鈕與速率選擇 -->
+      <div class="autoplay-control-group">
+        <button class="btn-icon" id="autoplayBtn" title="開啟/暫停 自動輪播 (Auto-Play)">
+          <i class="fa-solid fa-play"></i>
+        </button>
+        <select id="autoplaySpeedSelect" class="speed-select" title="選擇輪播速度">
+          <option value="3000">3 秒/頁</option>
+          <option value="5000" selected>5 秒/頁</option>
+          <option value="8000">8 秒/頁</option>
+          <option value="10000">10 秒/頁</option>
+        </select>
+      </div>
+
       <button class="btn-icon" id="toggleSidebarBtn" title="開啟/關閉目錄側邊欄">
         <i class="fa-solid fa-list-ul"></i>
       </button>
@@ -56,7 +69,7 @@
 
     <!-- Main Slide Presentation Viewport -->
     <main class="viewport">
-      <div class="slide-stage">
+      <div class="slide-stage" id="slideStage">
         <div class="slide-card-wrapper" id="slideCardWrapper">
           <!-- JS 動態渲染目前簡報頁面 -->
         </div>
@@ -73,9 +86,13 @@
           <span>頁次：</span>
           <input type="number" class="jump-input" id="jumpInput" min="1" max="50" value="1">
           <span>/ <span id="totalSlideNum">50</span> 頁</span>
+          <span class="autoplay-status-badge" id="autoplayStatusBadge"><i class="fa-solid fa-circle-play"></i> 自動輪播中</span>
         </div>
 
         <div class="nav-buttons">
+          <button class="btn-nav" id="playPauseNavBtn">
+            <i class="fa-solid fa-play"></i> 自動輪播
+          </button>
           <button class="btn-nav" id="prevBtn">
             <i class="fa-solid fa-arrow-left"></i> 上一頁
           </button>

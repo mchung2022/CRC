@@ -112,6 +112,39 @@ body {
   gap: 0.75rem;
 }
 
+.autoplay-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.autoplay-control-group .btn-icon {
+  border: none;
+  background: transparent;
+  width: 32px;
+  height: 32px;
+}
+
+.speed-select {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-family: var(--font-tc);
+  padding: 4px;
+  cursor: pointer;
+  outline: none;
+}
+
+.speed-select option {
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
 .btn-icon {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -132,6 +165,13 @@ body {
   color: #fff;
   border-color: var(--primary-cyan);
   transform: translateY(-2px);
+}
+
+.btn-icon.active {
+  background: var(--accent-amber) !important;
+  color: #fff !important;
+  border-color: var(--accent-amber) !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
 }
 
 /* 3. Main Layout Window */
@@ -812,6 +852,12 @@ body {
   border-color: var(--primary-cyan);
 }
 
+.btn-nav.active {
+  background: var(--accent-amber);
+  color: #fff;
+  border-color: var(--accent-amber);
+}
+
 .btn-nav:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -824,6 +870,31 @@ body {
   font-family: var(--font-en);
   font-weight: 700;
   color: var(--text-muted);
+}
+
+.autoplay-status-badge {
+  display: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 0.5rem;
+  animation: pulse 1.5s infinite;
+}
+
+.autoplay-status-badge.active {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 .jump-input {

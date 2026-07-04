@@ -973,7 +973,7 @@ const slidesData = [
         <div class="info-card">
           <h3><i class="fa-solid fa-landmark"></i> 2. 中央與地方「兒少代表」制度</h3>
           <p>衛生福利部及各縣市政府設立兒少代表機制：</p>
-
+          <ul class="styled-list">
             <li>兒少代表參與「兒童及少年福利與權益推動會」。</li>
             <li>針對跨領域議題（如數位安全、心理健康、通學環境）提出政策建言。</li>
             <li>落實行政決策前的兒少諮詢程序。</li>

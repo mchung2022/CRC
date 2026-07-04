@@ -6,8 +6,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
 
+  // 自動輪播狀態
+  let isAutoplay = false;
+  let autoplayTimer = null;
+  let autoplaySpeed = 5000; // 預設 5 秒
+
   // DOM 元素引用
   const slideContainer = document.getElementById("slideCardWrapper");
+  const slideStage = document.getElementById("slideStage");
   const slideListContainer = document.getElementById("slideList");
   const modalGridContainer = document.getElementById("modalGrid");
   const currentSlideNumEl = document.getElementById("currentSlideNum");
@@ -25,6 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const searchInput = document.getElementById("searchInput");
 
+  // 輪播控制 DOM
+  const autoplayBtn = document.getElementById("autoplayBtn");
+  const playPauseNavBtn = document.getElementById("playPauseNavBtn");
+  const autoplaySpeedSelect = document.getElementById("autoplaySpeedSelect");
+  const autoplayStatusBadge = document.getElementById("autoplayStatusBadge");
+
   totalSlideNumEl.textContent = totalSlides;
   jumpInput.max = totalSlides;
 
@@ -41,7 +53,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const item = document.createElement("div");
       item.className = `slide-item ${index === currentSlideIndex ? "active" : ""}`;
-      item.onclick = () => goToSlide(index);
+      item.onclick = () => {
+        goToSlide(index);
+        if (isAutoplay) resetAutoplayTimer();
+      };
 
       const typeBadge = slide.type === 'quiz' ? '<span class="slide-item-badge" style="color:#f59e0b;">素養題</span>' : '';
 
@@ -63,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
       card.onclick = () => {
         goToSlide(index);
         closeOverviewModal();
+        if (isAutoplay) resetAutoplayTimer();
       };
 
       const isQuiz = slide.type === 'quiz';
@@ -85,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!slide) return;
 
     currentSlideIndex = index;
-    currentSlideNumEl.textContent = slide.id;
     jumpInput.value = slide.id;
 
     // 更新進度條
@@ -94,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 按鈕狀態更新
     prevBtn.disabled = index === 0;
-    nextBtn.disabled = index === totalSlides - 1;
+    nextBtn.disabled = index === totalSlides - 1 && !isAutoplay;
 
     // 如果是 Quiz 類型，調用渲染 Quiz
     if (slide.type === "quiz") {
@@ -221,39 +236,143 @@ document.addEventListener("DOMContentLoaded", () => {
   function prevSlide() {
     if (currentSlideIndex > 0) {
       goToSlide(currentSlideIndex - 1);
+    } else if (isAutoplay) {
+      goToSlide(totalSlides - 1); // 自動輪播倒退循環
     }
   }
 
   function nextSlide() {
     if (currentSlideIndex < totalSlides - 1) {
       goToSlide(currentSlideIndex + 1);
+    } else {
+      // 若在最後一頁且開啟輪播，回到第一頁循環
+      goToSlide(0);
     }
   }
 
-  // 6. 事件監聽設定
-  prevBtn.addEventListener("click", prevSlide);
-  nextBtn.addEventListener("click", nextSlide);
+  // 6. 自動輪播 (Autoplay / Carousel) 控制邏輯
+  function startAutoplay() {
+    isAutoplay = true;
+    updateAutoplayUI();
+    autoplayTimer = setInterval(() => {
+      nextSlide();
+    }, autoplaySpeed);
+  }
+
+  function stopAutoplay() {
+    isAutoplay = false;
+    if (autoplayTimer) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = null;
+    }
+    updateAutoplayUI();
+  }
+
+  function toggleAutoplay() {
+    if (isAutoplay) {
+      stopAutoplay();
+    } else {
+      startAutoplay();
+    }
+  }
+
+  function resetAutoplayTimer() {
+    if (autoplayTimer) {
+      clearInterval(autoplayTimer);
+      autoplayTimer = setInterval(() => {
+        nextSlide();
+      }, autoplaySpeed);
+    }
+  }
+
+  function updateAutoplayUI() {
+    const playIcon = autoplayBtn.querySelector("i");
+    if (isAutoplay) {
+      playIcon.className = "fa-solid fa-pause";
+      autoplayBtn.classList.add("active");
+      playPauseNavBtn.classList.add("active");
+      playPauseNavBtn.innerHTML = '<i class="fa-solid fa-pause"></i> 暫停輪播';
+      autoplayStatusBadge.classList.add("active");
+    } else {
+      playIcon.className = "fa-solid fa-play";
+      autoplayBtn.classList.remove("active");
+      playPauseNavBtn.classList.remove("active");
+      playPauseNavBtn.innerHTML = '<i class="fa-solid fa-play"></i> 自動輪播';
+      autoplayStatusBadge.classList.remove("active");
+    }
+  }
+
+  // 7. 事件監聽設定
+  autoplayBtn.addEventListener("click", toggleAutoplay);
+  playPauseNavBtn.addEventListener("click", toggleAutoplay);
+
+  autoplaySpeedSelect.addEventListener("change", (e) => {
+    autoplaySpeed = parseInt(e.target.value);
+    if (isAutoplay) {
+      resetAutoplayTimer();
+    }
+  });
+
+  prevBtn.addEventListener("click", () => {
+    prevSlide();
+    if (isAutoplay) resetAutoplayTimer();
+  });
+
+  nextBtn.addEventListener("click", () => {
+    nextSlide();
+    if (isAutoplay) resetAutoplayTimer();
+  });
 
   jumpInput.addEventListener("change", (e) => {
     const val = parseInt(e.target.value);
     if (!isNaN(val) && val >= 1 && val <= totalSlides) {
       goToSlide(val - 1);
+      if (isAutoplay) resetAutoplayTimer();
     }
   });
 
+  // 觸控滑動手勢支援 (Touch Swipe on Mobile/Tablet)
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  slideStage.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  slideStage.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    if (touchEndX < touchStartX - swipeThreshold) {
+      nextSlide();
+      if (isAutoplay) resetAutoplayTimer();
+    }
+    if (touchEndX > touchStartX + swipeThreshold) {
+      prevSlide();
+      if (isAutoplay) resetAutoplayTimer();
+    }
+  }
+
   // 鍵盤快捷鍵 (方向鍵左右, 空白鍵)
   document.addEventListener("keydown", (e) => {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
 
     if (e.key === "ArrowLeft" || e.key === "PageUp") {
       prevSlide();
+      if (isAutoplay) resetAutoplayTimer();
     } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
       e.preventDefault();
       nextSlide();
+      if (isAutoplay) resetAutoplayTimer();
     } else if (e.key === "Home") {
       goToSlide(0);
+      if (isAutoplay) resetAutoplayTimer();
     } else if (e.key === "End") {
       goToSlide(totalSlides - 1);
+      if (isAutoplay) resetAutoplayTimer();
     }
   });
 
