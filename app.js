@@ -1,17 +1,78 @@
 /**
  * CRC (兒童權利公約) 互動簡報與素養試題系統主程式
  */
+
+// 學生個人資訊 (姓名與學號) - 全域宣告
+window.studentInfo = {
+  name: localStorage.getItem("crc_student_name") || "",
+  studentId: localStorage.getItem("crc_student_id") || ""
+};
+
+// 提交登錄資訊全域函式 (確保頁面一載入即可調用)
+window.submitMandatoryStudentEntry = function() {
+  const nameInput = document.getElementById("entryStudentName");
+  const idInput = document.getElementById("entryStudentId");
+  const modal = document.getElementById("mandatoryStudentModal");
+  const errAlert = document.getElementById("entryErrorAlert");
+  const headerText = document.getElementById("headerStudentText");
+
+  const name = nameInput ? nameInput.value.trim() : "";
+  const id = idInput ? idInput.value.trim() : "";
+
+  if (!name) {
+    if (errAlert) {
+      errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
+      errAlert.style.display = "flex";
+    }
+    if (nameInput) nameInput.focus();
+    return false;
+  }
+
+  if (errAlert) errAlert.style.display = "none";
+
+  const finalId = id || "未填寫學號";
+  window.studentInfo.name = name;
+  window.studentInfo.studentId = finalId;
+
+  localStorage.setItem("crc_student_name", name);
+  localStorage.setItem("crc_student_id", finalId);
+
+  if (headerText) {
+    headerText.textContent = `學生：${name} (${finalId})`;
+  }
+
+  // 強制隱藏 Modal 遮罩
+  if (modal) {
+    modal.classList.remove("active");
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+
+  if (typeof window.showToast === 'function') {
+    window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
+  }
+  return true;
+};
+
+// 點擊 Header 按鈕修改個人資訊
+window.editStudentInfo = function() {
+  const modal = document.getElementById("mandatoryStudentModal");
+  const entryStudentName = document.getElementById("entryStudentName");
+  const entryStudentId = document.getElementById("entryStudentId");
+  if (entryStudentName) entryStudentName.value = window.studentInfo.name;
+  if (entryStudentId) entryStudentId.value = window.studentInfo.studentId;
+  if (modal) {
+    modal.classList.add("active");
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   let currentSlideIndex = 0;
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
   let hasAutoSubmitted = false; // 是否已自動同步至 Google Sheet
-
-  // 學生個人資訊 (姓名與學號)
-  let studentInfo = {
-    name: localStorage.getItem("crc_student_name") || "",
-    studentId: localStorage.getItem("crc_student_id") || ""
-  };
 
   // 自動輪播狀態
   let isAutoplay = false;
@@ -47,7 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const mandatoryStudentModal = document.getElementById("mandatoryStudentModal");
   const entryStudentName = document.getElementById("entryStudentName");
   const entryStudentId = document.getElementById("entryStudentId");
-  const entryErrorAlert = document.getElementById("entryErrorAlert");
   const entrySubmitBtn = document.getElementById("entrySubmitBtn");
   const headerStudentText = document.getElementById("headerStudentText");
 
@@ -77,14 +137,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 檢查學生是否已填寫登錄資訊
   function checkStudentLoginState() {
-    if (studentInfo.name) {
+    if (window.studentInfo.name) {
       if (mandatoryStudentModal) {
         mandatoryStudentModal.classList.remove("active");
         mandatoryStudentModal.classList.add("hidden");
         mandatoryStudentModal.style.display = "none";
       }
       if (headerStudentText) {
-        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId || '未填寫學號'})`;
+        headerStudentText.textContent = `學生：${window.studentInfo.name} (${window.studentInfo.studentId || '未填寫學號'})`;
       }
     } else {
       if (mandatoryStudentModal) {
@@ -92,79 +152,25 @@ document.addEventListener("DOMContentLoaded", () => {
         mandatoryStudentModal.classList.remove("hidden");
         mandatoryStudentModal.style.display = "flex";
       }
-      if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
-      if (entryStudentId && studentInfo.studentId) entryStudentId.value = studentInfo.studentId;
+      if (entryStudentName && window.studentInfo.name) entryStudentName.value = window.studentInfo.name;
+      if (entryStudentId && window.studentInfo.studentId) entryStudentId.value = window.studentInfo.studentId;
     }
   }
-
-  // 提交登錄資訊（姓名為必填，學號可選填）
-  window.submitMandatoryStudentEntry = function() {
-    const nameInput = document.getElementById("entryStudentName");
-    const idInput = document.getElementById("entryStudentId");
-    const modal = document.getElementById("mandatoryStudentModal");
-    const errAlert = document.getElementById("entryErrorAlert");
-    const headerText = document.getElementById("headerStudentText");
-
-    const name = nameInput ? nameInput.value.trim() : "";
-    const id = idInput ? idInput.value.trim() : "";
-
-    if (!name) {
-      if (errAlert) {
-        errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
-        errAlert.style.display = "flex";
-      }
-      if (nameInput) nameInput.focus();
-      return;
-    }
-
-    if (errAlert) errAlert.style.display = "none";
-
-    const finalId = id || "未填寫學號";
-    studentInfo.name = name;
-    studentInfo.studentId = finalId;
-
-    localStorage.setItem("crc_student_name", name);
-    localStorage.setItem("crc_student_id", finalId);
-
-    if (headerText) {
-      headerText.textContent = `學生：${name} (${finalId})`;
-    }
-
-    // 關閉 Modal 遮罩
-    if (modal) {
-      modal.classList.remove("active");
-      modal.classList.add("hidden");
-      modal.style.display = "none";
-    }
-
-    window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
-  };
-
-  // 點擊 Header 按鈕修改個人資訊
-  window.editStudentInfo = function() {
-    if (entryStudentName) entryStudentName.value = studentInfo.name;
-    if (entryStudentId) entryStudentId.value = studentInfo.studentId;
-    if (mandatoryStudentModal) {
-      mandatoryStudentModal.classList.add("active");
-      mandatoryStudentModal.classList.remove("hidden");
-      mandatoryStudentModal.style.display = "flex";
-    }
-  };
 
   // 保存封面填寫的學生個人資訊
   window.saveStudentInfo = function() {
     const nameEl = document.getElementById("coverStudentName");
     const idEl = document.getElementById("coverStudentId");
     if (nameEl) {
-      studentInfo.name = nameEl.value.trim();
-      localStorage.setItem("crc_student_name", studentInfo.name);
+      window.studentInfo.name = nameEl.value.trim();
+      localStorage.setItem("crc_student_name", window.studentInfo.name);
     }
     if (idEl) {
-      studentInfo.studentId = idEl.value.trim();
-      localStorage.setItem("crc_student_id", studentInfo.studentId);
+      window.studentInfo.studentId = idEl.value.trim();
+      localStorage.setItem("crc_student_id", window.studentInfo.studentId);
     }
-    if (headerStudentText && (studentInfo.name || studentInfo.studentId)) {
-      headerStudentText.textContent = `學生：${studentInfo.name || '未登錄'} (${studentInfo.studentId || '未填寫'})`;
+    if (headerStudentText && (window.studentInfo.name || window.studentInfo.studentId)) {
+      headerStudentText.textContent = `學生：${window.studentInfo.name || '未登錄'} (${window.studentInfo.studentId || '未填寫'})`;
     }
   };
 
@@ -300,8 +306,8 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         const nameEl = document.getElementById("coverStudentName");
         const idEl = document.getElementById("coverStudentId");
-        if (nameEl && studentInfo.name) nameEl.value = studentInfo.name;
-        if (idEl && studentInfo.studentId) idEl.value = studentInfo.studentId;
+        if (nameEl && window.studentInfo.name) nameEl.value = window.studentInfo.name;
+        if (idEl && window.studentInfo.studentId) idEl.value = window.studentInfo.studentId;
       }, 50);
     }
 
@@ -446,8 +452,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const score = correctCount * 10;
-    const name = studentInfo.name || "學生";
-    const className = studentInfo.studentId || "未填寫學號";
+    const name = window.studentInfo.name || "學生";
+    const className = window.studentInfo.studentId || "未填寫學號";
 
     const payload = {
       name: name,
@@ -475,8 +481,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // 5. Google Sheet 串接對話框控制與資料計算
   window.openGoogleSheetModal = function() {
     // 預先填入封面記錄的姓名學號
-    if (sheetStudentName && studentInfo.name) sheetStudentName.value = studentInfo.name;
-    if (sheetClassName && studentInfo.studentId) sheetClassName.value = studentInfo.studentId;
+    if (sheetStudentName && window.studentInfo.name) sheetStudentName.value = window.studentInfo.name;
+    if (sheetClassName && window.studentInfo.studentId) sheetClassName.value = window.studentInfo.studentId;
 
     // 計算測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
@@ -529,8 +535,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 傳送資料至 Google Sheet
   window.submitDataToGoogleSheet = function() {
-    const name = sheetStudentName ? sheetStudentName.value.trim() : studentInfo.name;
-    const className = sheetClassName ? sheetClassName.value.trim() : studentInfo.studentId;
+    const name = sheetStudentName ? sheetStudentName.value.trim() : window.studentInfo.name;
+    const className = sheetClassName ? sheetClassName.value.trim() : window.studentInfo.studentId;
     const feedback = sheetFeedbackText ? sheetFeedbackText.value.trim() : "";
     const customUrl = sheetWebAppUrl ? sheetWebAppUrl.value.trim() : "";
 
@@ -772,7 +778,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (overviewBtn) overviewBtn.addEventListener("click", openOverviewModal);
-  if (closeModalBtn) closeModalBtn.addEventListener("click", closeOverviewModal);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeModalBtn);
   if (overviewModal) {
     overviewModal.addEventListener("click", (e) => {
       if (e.target === overviewModal) closeOverviewModal();

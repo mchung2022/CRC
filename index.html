@@ -1308,8 +1308,14 @@ body {
   </div>
 
   <!-- Mandatory Student Entry Modal (開啟時必須先輸入姓名學號) -->
-  <div class="modal-overlay active" id="mandatoryStudentModal">
-    <div class="modal-content" style="max-width: 520px; height: auto; padding: 2rem; border-color: var(--primary-cyan); box-shadow: 0 0 40px var(--primary-cyan-glow);">
+  <div class="modal-overlay active" id="mandatoryStudentModal" style="display: flex;">
+    <div class="modal-content" style="max-width: 520px; height: auto; padding: 2rem; border-color: var(--primary-cyan); box-shadow: 0 0 40px var(--primary-cyan-glow); position: relative;">
+      
+      <!-- 右上角 ✕ 關閉按鈕 -->
+      <button class="btn-icon" onclick="document.getElementById('mandatoryStudentModal').style.display='none';" style="position: absolute; top: 1rem; right: 1rem; z-index: 10; font-size: 1.2rem; cursor: pointer;" title="跳過直接進入簡報">
+        ✕
+      </button>
+
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <div class="badge-pill" style="margin-bottom: 0.5rem;"><i class="fa-solid fa-shield-halved"></i> 人權教育登錄入口</div>
         <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">兒童權利公約 (CRC) 簡報與素養測驗</h2>
@@ -1323,7 +1329,7 @@ body {
         </div>
 
         <div class="sl-field">
-          <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-id-card text-cyan"></i> 學號 / 班級 <span style="color:var(--accent-muted)">(選填)</span>：</label>
+          <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-id-card text-cyan"></i> 學號 / 班級 <span style="color:var(--text-muted)">(選填)</span>：</label>
           <input type="text" id="entryStudentId" class="search-input" placeholder="請輸入學號與班級（例如：高一乙班 / 112005）" style="padding-left: 1rem; font-size: 1rem; height: 44px;">
         </div>
 
@@ -1331,7 +1337,7 @@ body {
           <i class="fa-solid fa-circle-exclamation"></i> 請完整填寫姓名後再點擊進入投影片！
         </div>
 
-        <button class="btn-nav" id="entrySubmitBtn" onclick="window.submitMandatoryStudentEntry()" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem; cursor: pointer;">
+        <button class="btn-nav" id="entrySubmitBtn" onclick="document.getElementById('mandatoryStudentModal').style.display='none'; if(window.submitMandatoryStudentEntry) window.submitMandatoryStudentEntry();" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem; cursor: pointer;">
           🚀 進入投影片開始學習
         </button>
       </div>
@@ -3112,17 +3118,78 @@ const slidesData = [
 /**
  * CRC (兒童權利公約) 互動簡報與素養試題系統主程式
  */
+
+// 學生個人資訊 (姓名與學號) - 全域宣告
+window.studentInfo = {
+  name: localStorage.getItem("crc_student_name") || "",
+  studentId: localStorage.getItem("crc_student_id") || ""
+};
+
+// 提交登錄資訊全域函式 (確保頁面一載入即可調用)
+window.submitMandatoryStudentEntry = function() {
+  const nameInput = document.getElementById("entryStudentName");
+  const idInput = document.getElementById("entryStudentId");
+  const modal = document.getElementById("mandatoryStudentModal");
+  const errAlert = document.getElementById("entryErrorAlert");
+  const headerText = document.getElementById("headerStudentText");
+
+  const name = nameInput ? nameInput.value.trim() : "";
+  const id = idInput ? idInput.value.trim() : "";
+
+  if (!name) {
+    if (errAlert) {
+      errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
+      errAlert.style.display = "flex";
+    }
+    if (nameInput) nameInput.focus();
+    return false;
+  }
+
+  if (errAlert) errAlert.style.display = "none";
+
+  const finalId = id || "未填寫學號";
+  window.studentInfo.name = name;
+  window.studentInfo.studentId = finalId;
+
+  localStorage.setItem("crc_student_name", name);
+  localStorage.setItem("crc_student_id", finalId);
+
+  if (headerText) {
+    headerText.textContent = `學生：${name} (${finalId})`;
+  }
+
+  // 強制隱藏 Modal 遮罩
+  if (modal) {
+    modal.classList.remove("active");
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+
+  if (typeof window.showToast === 'function') {
+    window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
+  }
+  return true;
+};
+
+// 點擊 Header 按鈕修改個人資訊
+window.editStudentInfo = function() {
+  const modal = document.getElementById("mandatoryStudentModal");
+  const entryStudentName = document.getElementById("entryStudentName");
+  const entryStudentId = document.getElementById("entryStudentId");
+  if (entryStudentName) entryStudentName.value = window.studentInfo.name;
+  if (entryStudentId) entryStudentId.value = window.studentInfo.studentId;
+  if (modal) {
+    modal.classList.add("active");
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   let currentSlideIndex = 0;
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
   let hasAutoSubmitted = false; // 是否已自動同步至 Google Sheet
-
-  // 學生個人資訊 (姓名與學號)
-  let studentInfo = {
-    name: localStorage.getItem("crc_student_name") || "",
-    studentId: localStorage.getItem("crc_student_id") || ""
-  };
 
   // 自動輪播狀態
   let isAutoplay = false;
@@ -3158,7 +3225,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const mandatoryStudentModal = document.getElementById("mandatoryStudentModal");
   const entryStudentName = document.getElementById("entryStudentName");
   const entryStudentId = document.getElementById("entryStudentId");
-  const entryErrorAlert = document.getElementById("entryErrorAlert");
   const entrySubmitBtn = document.getElementById("entrySubmitBtn");
   const headerStudentText = document.getElementById("headerStudentText");
 
@@ -3188,14 +3254,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 檢查學生是否已填寫登錄資訊
   function checkStudentLoginState() {
-    if (studentInfo.name) {
+    if (window.studentInfo.name) {
       if (mandatoryStudentModal) {
         mandatoryStudentModal.classList.remove("active");
         mandatoryStudentModal.classList.add("hidden");
         mandatoryStudentModal.style.display = "none";
       }
       if (headerStudentText) {
-        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId || '未填寫學號'})`;
+        headerStudentText.textContent = `學生：${window.studentInfo.name} (${window.studentInfo.studentId || '未填寫學號'})`;
       }
     } else {
       if (mandatoryStudentModal) {
@@ -3203,79 +3269,25 @@ document.addEventListener("DOMContentLoaded", () => {
         mandatoryStudentModal.classList.remove("hidden");
         mandatoryStudentModal.style.display = "flex";
       }
-      if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
-      if (entryStudentId && studentInfo.studentId) entryStudentId.value = studentInfo.studentId;
+      if (entryStudentName && window.studentInfo.name) entryStudentName.value = window.studentInfo.name;
+      if (entryStudentId && window.studentInfo.studentId) entryStudentId.value = window.studentInfo.studentId;
     }
   }
-
-  // 提交登錄資訊（姓名為必填，學號可選填）
-  window.submitMandatoryStudentEntry = function() {
-    const nameInput = document.getElementById("entryStudentName");
-    const idInput = document.getElementById("entryStudentId");
-    const modal = document.getElementById("mandatoryStudentModal");
-    const errAlert = document.getElementById("entryErrorAlert");
-    const headerText = document.getElementById("headerStudentText");
-
-    const name = nameInput ? nameInput.value.trim() : "";
-    const id = idInput ? idInput.value.trim() : "";
-
-    if (!name) {
-      if (errAlert) {
-        errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
-        errAlert.style.display = "flex";
-      }
-      if (nameInput) nameInput.focus();
-      return;
-    }
-
-    if (errAlert) errAlert.style.display = "none";
-
-    const finalId = id || "未填寫學號";
-    studentInfo.name = name;
-    studentInfo.studentId = finalId;
-
-    localStorage.setItem("crc_student_name", name);
-    localStorage.setItem("crc_student_id", finalId);
-
-    if (headerText) {
-      headerText.textContent = `學生：${name} (${finalId})`;
-    }
-
-    // 關閉 Modal 遮罩
-    if (modal) {
-      modal.classList.remove("active");
-      modal.classList.add("hidden");
-      modal.style.display = "none";
-    }
-
-    window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
-  };
-
-  // 點擊 Header 按鈕修改個人資訊
-  window.editStudentInfo = function() {
-    if (entryStudentName) entryStudentName.value = studentInfo.name;
-    if (entryStudentId) entryStudentId.value = studentInfo.studentId;
-    if (mandatoryStudentModal) {
-      mandatoryStudentModal.classList.add("active");
-      mandatoryStudentModal.classList.remove("hidden");
-      mandatoryStudentModal.style.display = "flex";
-    }
-  };
 
   // 保存封面填寫的學生個人資訊
   window.saveStudentInfo = function() {
     const nameEl = document.getElementById("coverStudentName");
     const idEl = document.getElementById("coverStudentId");
     if (nameEl) {
-      studentInfo.name = nameEl.value.trim();
-      localStorage.setItem("crc_student_name", studentInfo.name);
+      window.studentInfo.name = nameEl.value.trim();
+      localStorage.setItem("crc_student_name", window.studentInfo.name);
     }
     if (idEl) {
-      studentInfo.studentId = idEl.value.trim();
-      localStorage.setItem("crc_student_id", studentInfo.studentId);
+      window.studentInfo.studentId = idEl.value.trim();
+      localStorage.setItem("crc_student_id", window.studentInfo.studentId);
     }
-    if (headerStudentText && (studentInfo.name || studentInfo.studentId)) {
-      headerStudentText.textContent = `學生：${studentInfo.name || '未登錄'} (${studentInfo.studentId || '未填寫'})`;
+    if (headerStudentText && (window.studentInfo.name || window.studentInfo.studentId)) {
+      headerStudentText.textContent = `學生：${window.studentInfo.name || '未登錄'} (${window.studentInfo.studentId || '未填寫'})`;
     }
   };
 
@@ -3411,8 +3423,8 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         const nameEl = document.getElementById("coverStudentName");
         const idEl = document.getElementById("coverStudentId");
-        if (nameEl && studentInfo.name) nameEl.value = studentInfo.name;
-        if (idEl && studentInfo.studentId) idEl.value = studentInfo.studentId;
+        if (nameEl && window.studentInfo.name) nameEl.value = window.studentInfo.name;
+        if (idEl && window.studentInfo.studentId) idEl.value = window.studentInfo.studentId;
       }, 50);
     }
 
@@ -3557,8 +3569,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const score = correctCount * 10;
-    const name = studentInfo.name || "學生";
-    const className = studentInfo.studentId || "未填寫學號";
+    const name = window.studentInfo.name || "學生";
+    const className = window.studentInfo.studentId || "未填寫學號";
 
     const payload = {
       name: name,
@@ -3586,8 +3598,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // 5. Google Sheet 串接對話框控制與資料計算
   window.openGoogleSheetModal = function() {
     // 預先填入封面記錄的姓名學號
-    if (sheetStudentName && studentInfo.name) sheetStudentName.value = studentInfo.name;
-    if (sheetClassName && studentInfo.studentId) sheetClassName.value = studentInfo.studentId;
+    if (sheetStudentName && window.studentInfo.name) sheetStudentName.value = window.studentInfo.name;
+    if (sheetClassName && window.studentInfo.studentId) sheetClassName.value = window.studentInfo.studentId;
 
     // 計算測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
@@ -3640,8 +3652,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 傳送資料至 Google Sheet
   window.submitDataToGoogleSheet = function() {
-    const name = sheetStudentName ? sheetStudentName.value.trim() : studentInfo.name;
-    const className = sheetClassName ? sheetClassName.value.trim() : studentInfo.studentId;
+    const name = sheetStudentName ? sheetStudentName.value.trim() : window.studentInfo.name;
+    const className = sheetClassName ? sheetClassName.value.trim() : window.studentInfo.studentId;
     const feedback = sheetFeedbackText ? sheetFeedbackText.value.trim() : "";
     const customUrl = sheetWebAppUrl ? sheetWebAppUrl.value.trim() : "";
 
@@ -3883,7 +3895,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (overviewBtn) overviewBtn.addEventListener("click", openOverviewModal);
-  if (closeModalBtn) closeModalBtn.addEventListener("click", closeOverviewModal);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeModalBtn);
   if (overviewModal) {
     overviewModal.addEventListener("click", (e) => {
       if (e.target === overviewModal) closeOverviewModal();
