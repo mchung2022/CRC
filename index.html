@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>兒童權利公約 (CRC) 簡介與素養實踐 | 50頁互動簡報系統</title>
+  <meta name="description" content="完整 50 頁兒童權利公約 (CRC) 簡介與素養導向情境題庫簡報網頁，涵蓋 CRC 四大原則、4Ps 權利分類、迷思破除與 10 大素養情境解析。">
+  
+  <!-- FontAwesome & Google Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="brand">
+      <i class="fa-solid fa-shield-cat"></i>
+      <div>CRC 兒童權利公約 <span>| 人權教育與素養實踐簡報</span></div>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-icon" id="toggleSidebarBtn" title="開啟/關閉目錄側邊欄">
+        <i class="fa-solid fa-list-ul"></i>
+      </button>
+      <button class="btn-icon" id="overviewBtn" title="簡報總覽 (Grid View)">
+        <i class="fa-solid fa-table-cells"></i>
+      </button>
+      <button class="btn-icon" id="themeToggleBtn" title="切換明亮/暗黑模式">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="btn-icon" id="fullscreenBtn" title="全螢幕展示">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Sidebar Slide Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <strong style="font-size:0.95rem; color:var(--text-main);"><i class="fa-solid fa-compass"></i> 簡報目錄 (50 頁)</strong>
+        <span style="font-size:0.75rem; color:var(--text-muted);">按主題瀏覽</span>
+      </div>
+      <div class="search-box">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" class="search-input" id="searchInput" placeholder="搜尋條文、關鍵字或題目...">
+        </div>
+      </div>
+      <div class="slide-list" id="slideList">
+        <!-- JS 動態生成 50 頁目錄清單 -->
+      </div>
+    </aside>
+
+    <!-- Main Slide Presentation Viewport -->
+    <main class="viewport">
+      <div class="slide-stage">
+        <div class="slide-card-wrapper" id="slideCardWrapper">
+          <!-- JS 動態渲染目前簡報頁面 -->
+        </div>
+      </div>
+
+      <!-- Bottom Controls & Progress Bar -->
+      <footer class="bottom-controls">
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+
+        <div class="slide-counter-wrapper">
+          <i class="fa-solid fa-layer-group text-cyan"></i>
+          <span>頁次：</span>
+          <input type="number" class="jump-input" id="jumpInput" min="1" max="50" value="1">
+          <span>/ <span id="totalSlideNum">50</span> 頁</span>
+        </div>
+
+        <div class="nav-buttons">
+          <button class="btn-nav" id="prevBtn">
+            <i class="fa-solid fa-arrow-left"></i> 上一頁
+          </button>
+          <button class="btn-nav" id="nextBtn">
+            下一頁 <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- Overview Grid Modal -->
+  <div class="modal-overlay" id="overviewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-table-cells text-cyan"></i> 全 50 頁簡報縮圖總覽</h3>
+        <button class="btn-icon" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-grid" id="modalGrid">
+        <!-- JS 動態生成網格卡片 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide Data & Main Application Scripts -->
+  <script src="slides-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

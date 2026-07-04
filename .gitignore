@@ -1,0 +1,7 @@
+# Temporary & Scratch files
+*.docx
+*.doc
+*.xlsx
+*.py
+scratch/
+.system_generated/
