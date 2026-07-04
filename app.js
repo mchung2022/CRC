@@ -48,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const entryStudentName = document.getElementById("entryStudentName");
   const entryStudentId = document.getElementById("entryStudentId");
   const entryErrorAlert = document.getElementById("entryErrorAlert");
+  const entrySubmitBtn = document.getElementById("entrySubmitBtn");
   const headerStudentText = document.getElementById("headerStudentText");
 
   // 輪播控制 DOM
@@ -79,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (studentInfo.name) {
       if (mandatoryStudentModal) {
         mandatoryStudentModal.classList.remove("active");
+        mandatoryStudentModal.classList.add("hidden");
         mandatoryStudentModal.style.display = "none";
       }
       if (headerStudentText) {
@@ -87,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       if (mandatoryStudentModal) {
         mandatoryStudentModal.classList.add("active");
+        mandatoryStudentModal.classList.remove("hidden");
         mandatoryStudentModal.style.display = "flex";
       }
       if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
@@ -130,6 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 關閉 Modal 遮罩
     if (modal) {
       modal.classList.remove("active");
+      modal.classList.add("hidden");
       modal.style.display = "none";
     }
 
@@ -142,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (entryStudentId) entryStudentId.value = studentInfo.studentId;
     if (mandatoryStudentModal) {
       mandatoryStudentModal.classList.add("active");
+      mandatoryStudentModal.classList.remove("hidden");
       mandatoryStudentModal.style.display = "flex";
     }
   };
@@ -638,6 +643,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 7. 事件監聽與按鍵設定
+  if (entrySubmitBtn) {
+    entrySubmitBtn.addEventListener("click", window.submitMandatoryStudentEntry);
+  }
+
   if (entryStudentName) {
     entryStudentName.addEventListener("keyup", (e) => {
       if (e.key === "Enter") window.submitMandatoryStudentEntry();

@@ -1154,3 +1154,27 @@ body {
   padding-top: 0.6rem;
 }
 
+/* Mandatory Student Entry Modal */
+#mandatoryStudentModal {
+  z-index: 2500 !important;
+  backdrop-filter: blur(12px);
+  background: rgba(11, 15, 25, 0.96) !important;
+  display: flex;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#mandatoryStudentModal.active {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: flex !important;
+}
+
+#mandatoryStudentModal.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+

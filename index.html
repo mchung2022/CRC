@@ -1165,6 +1165,30 @@ body {
   padding-top: 0.6rem;
 }
 
+/* Mandatory Student Entry Modal */
+#mandatoryStudentModal {
+  z-index: 2500 !important;
+  backdrop-filter: blur(12px);
+  background: rgba(11, 15, 25, 0.96) !important;
+  display: flex;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#mandatoryStudentModal.active {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: flex !important;
+}
+
+#mandatoryStudentModal.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+
 
 </style>
 </head>
@@ -1284,7 +1308,7 @@ body {
   </div>
 
   <!-- Mandatory Student Entry Modal (開啟時必須先輸入姓名學號) -->
-  <div class="modal-overlay active" id="mandatoryStudentModal" style="z-index: 2000; backdrop-filter: blur(12px); background: rgba(11, 15, 25, 0.95);">
+  <div class="modal-overlay active" id="mandatoryStudentModal">
     <div class="modal-content" style="max-width: 520px; height: auto; padding: 2rem; border-color: var(--primary-cyan); box-shadow: 0 0 40px var(--primary-cyan-glow);">
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <div class="badge-pill" style="margin-bottom: 0.5rem;"><i class="fa-solid fa-shield-halved"></i> 人權教育登錄入口</div>
@@ -1299,15 +1323,15 @@ body {
         </div>
 
         <div class="sl-field">
-          <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-id-card text-cyan"></i> 學號 / 班級 <span style="color:var(--accent-red)">*</span>：</label>
+          <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-id-card text-cyan"></i> 學號 / 班級 <span style="color:var(--accent-muted)">(選填)</span>：</label>
           <input type="text" id="entryStudentId" class="search-input" placeholder="請輸入學號與班級（例如：高一乙班 / 112005）" style="padding-left: 1rem; font-size: 1rem; height: 44px;">
         </div>
 
         <div id="entryErrorAlert" class="alert-box alert-danger" style="display: none; margin-top: 0;">
-          <i class="fa-solid fa-circle-exclamation"></i> 請完整填寫姓名與學號後再點擊進入投影片！
+          <i class="fa-solid fa-circle-exclamation"></i> 請完整填寫姓名後再點擊進入投影片！
         </div>
 
-        <button class="btn-nav" onclick="window.submitMandatoryStudentEntry()" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem;">
+        <button class="btn-nav" id="entrySubmitBtn" onclick="window.submitMandatoryStudentEntry()" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem; cursor: pointer;">
           🚀 進入投影片開始學習
         </button>
       </div>
@@ -3135,6 +3159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const entryStudentName = document.getElementById("entryStudentName");
   const entryStudentId = document.getElementById("entryStudentId");
   const entryErrorAlert = document.getElementById("entryErrorAlert");
+  const entrySubmitBtn = document.getElementById("entrySubmitBtn");
   const headerStudentText = document.getElementById("headerStudentText");
 
   // 輪播控制 DOM
@@ -3163,41 +3188,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 檢查學生是否已填寫登錄資訊
   function checkStudentLoginState() {
-    if (studentInfo.name && studentInfo.studentId) {
-      if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+    if (studentInfo.name) {
+      if (mandatoryStudentModal) {
+        mandatoryStudentModal.classList.remove("active");
+        mandatoryStudentModal.classList.add("hidden");
+        mandatoryStudentModal.style.display = "none";
+      }
       if (headerStudentText) {
-        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId})`;
+        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId || '未填寫學號'})`;
       }
     } else {
-      if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+      if (mandatoryStudentModal) {
+        mandatoryStudentModal.classList.add("active");
+        mandatoryStudentModal.classList.remove("hidden");
+        mandatoryStudentModal.style.display = "flex";
+      }
       if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
       if (entryStudentId && studentInfo.studentId) entryStudentId.value = studentInfo.studentId;
     }
   }
 
-  // 提交強制登錄資訊
+  // 提交登錄資訊（姓名為必填，學號可選填）
   window.submitMandatoryStudentEntry = function() {
-    const name = entryStudentName ? entryStudentName.value.trim() : "";
-    const id = entryStudentId ? entryStudentId.value.trim() : "";
+    const nameInput = document.getElementById("entryStudentName");
+    const idInput = document.getElementById("entryStudentId");
+    const modal = document.getElementById("mandatoryStudentModal");
+    const errAlert = document.getElementById("entryErrorAlert");
+    const headerText = document.getElementById("headerStudentText");
 
-    if (!name || !id) {
-      if (entryErrorAlert) entryErrorAlert.style.display = "flex";
-      if (!name && entryStudentName) entryStudentName.focus();
-      else if (!id && entryStudentId) entryStudentId.focus();
+    const name = nameInput ? nameInput.value.trim() : "";
+    const id = idInput ? idInput.value.trim() : "";
+
+    if (!name) {
+      if (errAlert) {
+        errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
+        errAlert.style.display = "flex";
+      }
+      if (nameInput) nameInput.focus();
       return;
     }
 
-    if (entryErrorAlert) entryErrorAlert.style.display = "none";
-    studentInfo.name = name;
-    studentInfo.studentId = id;
-    localStorage.setItem("crc_student_name", name);
-    localStorage.setItem("crc_student_id", id);
+    if (errAlert) errAlert.style.display = "none";
 
-    if (headerStudentText) {
-      headerStudentText.textContent = `學生：${name} (${id})`;
+    const finalId = id || "未填寫學號";
+    studentInfo.name = name;
+    studentInfo.studentId = finalId;
+
+    localStorage.setItem("crc_student_name", name);
+    localStorage.setItem("crc_student_id", finalId);
+
+    if (headerText) {
+      headerText.textContent = `學生：${name} (${finalId})`;
     }
 
-    if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+    // 關閉 Modal 遮罩
+    if (modal) {
+      modal.classList.remove("active");
+      modal.classList.add("hidden");
+      modal.style.display = "none";
+    }
+
     window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
   };
 
@@ -3205,7 +3255,11 @@ document.addEventListener("DOMContentLoaded", () => {
   window.editStudentInfo = function() {
     if (entryStudentName) entryStudentName.value = studentInfo.name;
     if (entryStudentId) entryStudentId.value = studentInfo.studentId;
-    if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+    if (mandatoryStudentModal) {
+      mandatoryStudentModal.classList.add("active");
+      mandatoryStudentModal.classList.remove("hidden");
+      mandatoryStudentModal.style.display = "flex";
+    }
   };
 
   // 保存封面填寫的學生個人資訊
@@ -3699,7 +3753,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 7. 事件監聽設定
+  // 7. 事件監聽與按鍵設定
+  if (entrySubmitBtn) {
+    entrySubmitBtn.addEventListener("click", window.submitMandatoryStudentEntry);
+  }
+
+  if (entryStudentName) {
+    entryStudentName.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") window.submitMandatoryStudentEntry();
+    });
+  }
+  if (entryStudentId) {
+    entryStudentId.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") window.submitMandatoryStudentEntry();
+    });
+  }
+
   if (autoplayBtn) autoplayBtn.addEventListener("click", window.toggleAutoplay);
   if (playPauseNavBtn) playPauseNavBtn.addEventListener("click", window.toggleAutoplay);
 
