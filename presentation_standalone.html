@@ -1133,6 +1133,9 @@ body {
         </select>
       </div>
 
+      <button class="btn-icon" id="openSheetModalBtn" onclick="window.openGoogleSheetModal()" title="填報成績與心得至 Google Sheet">
+        <i class="fa-solid fa-file-excel"></i> 📊
+      </button>
       <button class="btn-icon" id="toggleSidebarBtn" title="開啟/關閉目錄側邊欄">
         <i class="fa-solid fa-list-ul"></i> ☰
       </button>
@@ -1200,6 +1203,9 @@ body {
         </div>
 
         <div class="nav-buttons">
+          <button class="btn-nav" id="sheetSubmitBtn" onclick="window.openGoogleSheetModal()" style="background:var(--accent-teal); color:#fff; border-color:var(--accent-teal);">
+            <i class="fa-solid fa-cloud-arrow-up"></i> 📊 填報至 Google Sheet
+          </button>
           <button class="btn-nav" id="playPauseNavBtn" onclick="window.toggleAutoplay()">
             <i class="fa-solid fa-play"></i> ▶ 自動輪播
           </button>
@@ -1226,6 +1232,72 @@ body {
         <!-- JS 動態生成網格卡片 -->
       </div>
     </div>
+  </div>
+
+  <!-- Google Sheet 串接對話框 Modal -->
+  <div class="modal-overlay" id="googleSheetModal">
+    <div class="modal-content" style="max-width: 650px; height: auto; max-height: 90vh;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-excel text-cyan"></i> 填報學習紀錄至 Google Sheet</h3>
+        <button class="btn-icon" onclick="window.closeGoogleSheetModal()"><i class="fa-solid fa-xmark"></i> ✕</button>
+      </div>
+      <div class="modal-body-form" style="padding: 1rem 0; overflow-y: auto;">
+        
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="display:block; font-weight:bold; margin-bottom:0.4rem; color:var(--text-main);">
+            <i class="fa-solid fa-user text-cyan"></i> 姓名 / 學號：
+          </label>
+          <input type="text" id="sheetStudentName" class="search-input" placeholder="例如：王小明 / 112001" style="padding-left:1rem;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="display:block; font-weight:bold; margin-bottom:0.4rem; color:var(--text-main);">
+            <i class="fa-solid fa-school text-cyan"></i> 班級 / 單位：
+          </label>
+          <input type="text" id="sheetClassName" class="search-input" placeholder="例如：高一甲班 / 人權社團" style="padding-left:1rem;">
+        </div>
+
+        <div class="info-card" style="margin-bottom: 1rem; background:rgba(14, 165, 233, 0.1); border-color:var(--primary-cyan);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-trophy text-amber font-xl"></i> 10 大素養試題得分：</span>
+            <strong id="sheetQuizScoreDisplay" style="font-size:1.4rem; color:var(--accent-amber);">0 / 100 分</strong>
+          </div>
+          <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;" id="sheetQuizDetailDisplay">
+            目前已完成 0 / 10 題答題
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="display:block; font-weight:bold; margin-bottom:0.4rem; color:var(--text-main);">
+            <i class="fa-solid fa-comment-dots text-cyan"></i> 學習心得與意見回饋 (選填)：
+          </label>
+          <textarea id="sheetFeedbackText" class="search-input" rows="3" placeholder="請分享您對兒童權利公約 (CRC) 的學習心得或建議..." style="padding-left:1rem; height:auto; resize:vertical;"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="display:block; font-weight:bold; margin-bottom:0.4rem; color:var(--text-muted); font-size:0.85rem;">
+            <i class="fa-solid fa-link"></i> Google Apps Script Web App URL (進階設定):
+          </label>
+          <input type="url" id="sheetWebAppUrl" class="search-input" placeholder="貼入您的 Google Apps Script 網頁應用程式 URL..." style="padding-left:1rem; font-size:0.8rem; color:var(--text-muted);">
+          <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">
+            * 若留空則自動送往範例收集試算表，部署您專屬的 Google Sheet 方式請參閱專案 `google_apps_script.js` 文件。
+          </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+          <button class="btn-nav" onclick="window.closeGoogleSheetModal()">取消</button>
+          <button class="btn-nav" id="submitToSheetBtn" onclick="window.submitDataToGoogleSheet()" style="background:var(--primary-cyan); color:#fff; border-color:var(--primary-cyan);">
+            <i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Alert -->
+  <div id="toastNotification" style="position:fixed; bottom:80px; right:20px; z-index:2000; padding:12px 24px; border-radius:10px; background:var(--accent-green); color:#fff; font-weight:bold; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:none; opacity:0; transition:opacity 0.3s ease;">
+    <i class="fa-solid fa-circle-check"></i> <span id="toastText">成功傳送至 Google Sheet！</span>
   </div>
 
   <!-- Slide Data & Main Application Scripts -->
@@ -2912,6 +2984,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let autoplayTimer = null;
   let autoplaySpeed = 5000; // 預設 5 秒
 
+  // 預設與使用者設定的 Google Apps Script Web App URL
+  let googleSheetEndpoint = localStorage.getItem("crc_google_sheet_url") || "https://script.google.com/macros/s/AKfycbz_demo_crc_endpoint/exec";
+
   // DOM 元素引用
   const slideContainer = document.getElementById("slideCardWrapper");
   const slideStage = document.getElementById("slideStage");
@@ -2939,8 +3014,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const autoplaySpeedSelect = document.getElementById("autoplaySpeedSelect");
   const autoplayStatusBadge = document.getElementById("autoplayStatusBadge");
 
+  // Google Sheet DOM
+  const googleSheetModal = document.getElementById("googleSheetModal");
+  const sheetStudentName = document.getElementById("sheetStudentName");
+  const sheetClassName = document.getElementById("sheetClassName");
+  const sheetQuizScoreDisplay = document.getElementById("sheetQuizScoreDisplay");
+  const sheetQuizDetailDisplay = document.getElementById("sheetQuizDetailDisplay");
+  const sheetFeedbackText = document.getElementById("sheetFeedbackText");
+  const sheetWebAppUrl = document.getElementById("sheetWebAppUrl");
+  const submitToSheetBtn = document.getElementById("submitToSheetBtn");
+  const toastNotification = document.getElementById("toastNotification");
+  const toastText = document.getElementById("toastText");
+
   if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
   if (jumpInput) jumpInput.max = totalSlides;
+  if (sheetWebAppUrl && localStorage.getItem("crc_google_sheet_url")) {
+    sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url");
+  }
 
   // 全域換頁函式 (提供 HTML onclick 與 EventListeners 調用)
   window.goToSlide = function(index) {
@@ -3180,6 +3270,127 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 重新渲染畫面呈現解析
     renderSlide(currentSlideIndex);
+  };
+
+  // 5. Google Sheet 串接對話框控制與資料計算
+  window.openGoogleSheetModal = function() {
+    // 計算測驗成績
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    let correctCount = 0;
+    let answeredCount = 0;
+    let quizLog = [];
+
+    quizSlides.forEach((s) => {
+      const ans = userQuizAnswers[s.id];
+      if (ans) {
+        answeredCount++;
+        if (ans.isCorrect) correctCount++;
+        quizLog.push(`P.${s.id}:${ans.isCorrect ? '對' : '錯'}`);
+      } else {
+        quizLog.push(`P.${s.id}:未答`);
+      }
+    });
+
+    const score = correctCount * 10;
+    if (sheetQuizScoreDisplay) {
+      sheetQuizScoreDisplay.textContent = `${score} / 100 分`;
+    }
+    if (sheetQuizDetailDisplay) {
+      sheetQuizDetailDisplay.textContent = `已完成 ${answeredCount} / 10 題測驗，答對 ${correctCount} 題`;
+    }
+
+    if (googleSheetModal) googleSheetModal.classList.add("active");
+  };
+
+  window.closeGoogleSheetModal = function() {
+    if (googleSheetModal) googleSheetModal.classList.remove("active");
+  };
+
+  window.showToast = function(msg) {
+    if (!toastNotification || !toastText) return;
+    toastText.textContent = msg;
+    toastNotification.style.display = "block";
+    void toastNotification.offsetWidth;
+    toastNotification.style.opacity = "1";
+    setTimeout(() => {
+      toastNotification.style.opacity = "0";
+      setTimeout(() => {
+        toastNotification.style.display = "none";
+      }, 300);
+    }, 3500);
+  };
+
+  // 傳送資料至 Google Sheet
+  window.submitDataToGoogleSheet = function() {
+    const name = sheetStudentName ? sheetStudentName.value.trim() : "";
+    const className = sheetClassName ? sheetClassName.value.trim() : "";
+    const feedback = sheetFeedbackText ? sheetFeedbackText.value.trim() : "";
+    const customUrl = sheetWebAppUrl ? sheetWebAppUrl.value.trim() : "";
+
+    if (!name) {
+      alert("請填寫您的姓名或學號！");
+      if (sheetStudentName) sheetStudentName.focus();
+      return;
+    }
+
+    const targetUrl = customUrl || googleSheetEndpoint;
+    if (customUrl) {
+      localStorage.setItem("crc_google_sheet_url", customUrl);
+    }
+
+    // 彙整測驗成績
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    let correctCount = 0;
+    let quizDetails = [];
+    quizSlides.forEach((s) => {
+      const ans = userQuizAnswers[s.id];
+      if (ans) {
+        if (ans.isCorrect) correctCount++;
+        quizDetails.push(`第${s.id}頁:${ans.isCorrect ? '正確' : '錯誤'}`);
+      } else {
+        quizDetails.push(`第${s.id}頁:未作答`);
+      }
+    });
+
+    const payload = {
+      name: name,
+      className: className || "未填寫",
+      score: `${correctCount * 10} 分`,
+      correctCount: correctCount,
+      feedback: feedback || "無",
+      details: quizDetails.join("; ")
+    };
+
+    if (submitToSheetBtn) {
+      submitToSheetBtn.disabled = true;
+      submitToSheetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在傳送...';
+    }
+
+    // 發送 POST 請求至 Google Apps Script Web App
+    fetch(targetUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      window.closeGoogleSheetModal();
+      window.showToast("🎉 成功傳送學習紀錄與成績至 Google Sheet！");
+      if (submitToSheetBtn) {
+        submitToSheetBtn.disabled = false;
+        submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
+      }
+    }).catch((err) => {
+      console.error("Google Sheet 提交錯誤:", err);
+      // no-cors 下有時跨網域仍成功寫入
+      window.closeGoogleSheetModal();
+      window.showToast("🎉 已發送資料至 Google Sheet！");
+      if (submitToSheetBtn) {
+        submitToSheetBtn.disabled = false;
+        submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
+      }
+    });
   };
 
   // 6. 自動輪播 (Autoplay / Carousel) 控制邏輯

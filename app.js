@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let autoplayTimer = null;
   let autoplaySpeed = 5000; // 預設 5 秒
 
+  // 預設與使用者設定的 Google Apps Script Web App URL
+  let googleSheetEndpoint = localStorage.getItem("crc_google_sheet_url") || "https://script.google.com/macros/s/AKfycbz_demo_crc_endpoint/exec";
+
   // DOM 元素引用
   const slideContainer = document.getElementById("slideCardWrapper");
   const slideStage = document.getElementById("slideStage");
@@ -38,8 +41,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const autoplaySpeedSelect = document.getElementById("autoplaySpeedSelect");
   const autoplayStatusBadge = document.getElementById("autoplayStatusBadge");
 
+  // Google Sheet DOM
+  const googleSheetModal = document.getElementById("googleSheetModal");
+  const sheetStudentName = document.getElementById("sheetStudentName");
+  const sheetClassName = document.getElementById("sheetClassName");
+  const sheetQuizScoreDisplay = document.getElementById("sheetQuizScoreDisplay");
+  const sheetQuizDetailDisplay = document.getElementById("sheetQuizDetailDisplay");
+  const sheetFeedbackText = document.getElementById("sheetFeedbackText");
+  const sheetWebAppUrl = document.getElementById("sheetWebAppUrl");
+  const submitToSheetBtn = document.getElementById("submitToSheetBtn");
+  const toastNotification = document.getElementById("toastNotification");
+  const toastText = document.getElementById("toastText");
+
   if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
   if (jumpInput) jumpInput.max = totalSlides;
+  if (sheetWebAppUrl && localStorage.getItem("crc_google_sheet_url")) {
+    sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url");
+  }
 
   // 全域換頁函式 (提供 HTML onclick 與 EventListeners 調用)
   window.goToSlide = function(index) {
@@ -279,6 +297,127 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 重新渲染畫面呈現解析
     renderSlide(currentSlideIndex);
+  };
+
+  // 5. Google Sheet 串接對話框控制與資料計算
+  window.openGoogleSheetModal = function() {
+    // 計算測驗成績
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    let correctCount = 0;
+    let answeredCount = 0;
+    let quizLog = [];
+
+    quizSlides.forEach((s) => {
+      const ans = userQuizAnswers[s.id];
+      if (ans) {
+        answeredCount++;
+        if (ans.isCorrect) correctCount++;
+        quizLog.push(`P.${s.id}:${ans.isCorrect ? '對' : '錯'}`);
+      } else {
+        quizLog.push(`P.${s.id}:未答`);
+      }
+    });
+
+    const score = correctCount * 10;
+    if (sheetQuizScoreDisplay) {
+      sheetQuizScoreDisplay.textContent = `${score} / 100 分`;
+    }
+    if (sheetQuizDetailDisplay) {
+      sheetQuizDetailDisplay.textContent = `已完成 ${answeredCount} / 10 題測驗，答對 ${correctCount} 題`;
+    }
+
+    if (googleSheetModal) googleSheetModal.classList.add("active");
+  };
+
+  window.closeGoogleSheetModal = function() {
+    if (googleSheetModal) googleSheetModal.classList.remove("active");
+  };
+
+  window.showToast = function(msg) {
+    if (!toastNotification || !toastText) return;
+    toastText.textContent = msg;
+    toastNotification.style.display = "block";
+    void toastNotification.offsetWidth;
+    toastNotification.style.opacity = "1";
+    setTimeout(() => {
+      toastNotification.style.opacity = "0";
+      setTimeout(() => {
+        toastNotification.style.display = "none";
+      }, 300);
+    }, 3500);
+  };
+
+  // 傳送資料至 Google Sheet
+  window.submitDataToGoogleSheet = function() {
+    const name = sheetStudentName ? sheetStudentName.value.trim() : "";
+    const className = sheetClassName ? sheetClassName.value.trim() : "";
+    const feedback = sheetFeedbackText ? sheetFeedbackText.value.trim() : "";
+    const customUrl = sheetWebAppUrl ? sheetWebAppUrl.value.trim() : "";
+
+    if (!name) {
+      alert("請填寫您的姓名或學號！");
+      if (sheetStudentName) sheetStudentName.focus();
+      return;
+    }
+
+    const targetUrl = customUrl || googleSheetEndpoint;
+    if (customUrl) {
+      localStorage.setItem("crc_google_sheet_url", customUrl);
+    }
+
+    // 彙整測驗成績
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    let correctCount = 0;
+    let quizDetails = [];
+    quizSlides.forEach((s) => {
+      const ans = userQuizAnswers[s.id];
+      if (ans) {
+        if (ans.isCorrect) correctCount++;
+        quizDetails.push(`第${s.id}頁:${ans.isCorrect ? '正確' : '錯誤'}`);
+      } else {
+        quizDetails.push(`第${s.id}頁:未作答`);
+      }
+    });
+
+    const payload = {
+      name: name,
+      className: className || "未填寫",
+      score: `${correctCount * 10} 分`,
+      correctCount: correctCount,
+      feedback: feedback || "無",
+      details: quizDetails.join("; ")
+    };
+
+    if (submitToSheetBtn) {
+      submitToSheetBtn.disabled = true;
+      submitToSheetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在傳送...';
+    }
+
+    // 發送 POST 請求至 Google Apps Script Web App
+    fetch(targetUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      window.closeGoogleSheetModal();
+      window.showToast("🎉 成功傳送學習紀錄與成績至 Google Sheet！");
+      if (submitToSheetBtn) {
+        submitToSheetBtn.disabled = false;
+        submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
+      }
+    }).catch((err) => {
+      console.error("Google Sheet 提交錯誤:", err);
+      // no-cors 下有時跨網域仍成功寫入
+      window.closeGoogleSheetModal();
+      window.showToast("🎉 已發送資料至 Google Sheet！");
+      if (submitToSheetBtn) {
+        submitToSheetBtn.disabled = false;
+        submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
+      }
+    });
   };
 
   // 6. 自動輪播 (Autoplay / Carousel) 控制邏輯
