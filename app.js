@@ -8,27 +8,20 @@ window.studentInfo = {
   studentId: localStorage.getItem("crc_student_id") || ""
 };
 
-// 提交登錄資訊全域函式 (確保頁面一載入即可調用)
+// 提交登錄資訊全域函式 (確保頁面一載入即可調用，絕對不阻擋)
 window.submitMandatoryStudentEntry = function() {
   const nameInput = document.getElementById("entryStudentName");
   const idInput = document.getElementById("entryStudentId");
   const modal = document.getElementById("mandatoryStudentModal");
-  const errAlert = document.getElementById("entryErrorAlert");
   const headerText = document.getElementById("headerStudentText");
 
-  const name = nameInput ? nameInput.value.trim() : "";
-  const id = idInput ? idInput.value.trim() : "";
+  let name = nameInput ? nameInput.value.trim() : "";
+  let id = idInput ? idInput.value.trim() : "";
 
+  // 若未輸入姓名，預設帶入「學生」，確保點擊永遠能通過
   if (!name) {
-    if (errAlert) {
-      errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
-      errAlert.style.display = "flex";
-    }
-    if (nameInput) nameInput.focus();
-    return false;
+    name = "學生";
   }
-
-  if (errAlert) errAlert.style.display = "none";
 
   const finalId = id || "未填寫學號";
   window.studentInfo.name = name;
@@ -41,11 +34,13 @@ window.submitMandatoryStudentEntry = function() {
     headerText.textContent = `學生：${name} (${finalId})`;
   }
 
-  // 強制隱藏 Modal 遮罩
+  // 從 DOM 樹中完全物理移除遮罩
   if (modal) {
-    modal.classList.remove("active");
-    modal.classList.add("hidden");
-    modal.style.display = "none";
+    try {
+      modal.remove();
+    } catch (e) {
+      modal.style.display = "none";
+    }
   }
 
   if (typeof window.showToast === 'function') {
@@ -56,14 +51,27 @@ window.submitMandatoryStudentEntry = function() {
 
 // 點擊 Header 按鈕修改個人資訊
 window.editStudentInfo = function() {
-  const modal = document.getElementById("mandatoryStudentModal");
-  const entryStudentName = document.getElementById("entryStudentName");
-  const entryStudentId = document.getElementById("entryStudentId");
-  if (entryStudentName) entryStudentName.value = window.studentInfo.name;
-  if (entryStudentId) entryStudentId.value = window.studentInfo.studentId;
-  if (modal) {
+  let modal = document.getElementById("mandatoryStudentModal");
+  if (!modal) {
+    // 若已被 remove，動態重新創建精簡 Modal
+    const div = document.createElement("div");
+    div.className = "modal-overlay active";
+    div.id = "mandatoryStudentModal";
+    div.style.display = "flex";
+    div.innerHTML = `
+      <div class="modal-content" style="max-width: 520px; height: auto; padding: 2rem; border-color: var(--primary-cyan); position: relative;">
+        <button class="btn-icon" onclick="this.closest('.modal-overlay').remove();" style="position: absolute; top: 1rem; right: 1rem; font-size: 1.2rem; cursor: pointer;">✕</button>
+        <h3 style="margin-bottom: 1rem; color: var(--text-main);"><i class="fa-solid fa-user-pen text-cyan"></i> 修改學生個人資訊</h3>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <input type="text" id="entryStudentName" class="search-input" value="${window.studentInfo.name}" placeholder="學生姓名" style="padding-left: 1rem; height: 42px;">
+          <input type="text" id="entryStudentId" class="search-input" value="${window.studentInfo.studentId}" placeholder="學號 / 班級" style="padding-left: 1rem; height: 42px;">
+          <button type="button" class="btn-nav" onclick="window.submitMandatoryStudentEntry();" style="background: var(--primary-cyan); color: #fff; height: 44px; justify-content: center; font-weight: bold;">保存並繼續學習</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(div);
+  } else {
     modal.classList.add("active");
-    modal.classList.remove("hidden");
     modal.style.display = "flex";
   }
 };
@@ -139,9 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function checkStudentLoginState() {
     if (window.studentInfo.name) {
       if (mandatoryStudentModal) {
-        mandatoryStudentModal.classList.remove("active");
-        mandatoryStudentModal.classList.add("hidden");
-        mandatoryStudentModal.style.display = "none";
+        mandatoryStudentModal.remove();
       }
       if (headerStudentText) {
         headerStudentText.textContent = `學生：${window.studentInfo.name} (${window.studentInfo.studentId || '未填寫學號'})`;
@@ -149,7 +155,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       if (mandatoryStudentModal) {
         mandatoryStudentModal.classList.add("active");
-        mandatoryStudentModal.classList.remove("hidden");
         mandatoryStudentModal.style.display = "flex";
       }
       if (entryStudentName && window.studentInfo.name) entryStudentName.value = window.studentInfo.name;
@@ -778,7 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (overviewBtn) overviewBtn.addEventListener("click", openOverviewModal);
-  if (closeModalBtn) closeModalBtn.addEventListener("click", closeModalBtn);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeOverviewModal);
   if (overviewModal) {
     overviewModal.addEventListener("click", (e) => {
       if (e.target === overviewModal) closeOverviewModal();
