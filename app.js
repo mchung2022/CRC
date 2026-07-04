@@ -85,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSlideIndex = 0;
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
-  let hasAutoSubmitted = false; // 是否已自動同步至 Google Sheet
 
   // 自動輪播狀態
   let isAutoplay = false;
@@ -389,6 +388,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <strong>${resultText}</strong>
           </div>
           <div>${qData.explanation}</div>
+          <div style="font-size:0.82rem; color:var(--accent-teal); margin-top:0.6rem; font-weight:bold;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> 答題成績已自動同步寫入 Google Sheet 試算表，無需按送出！
+          </div>
         </div>
       `;
     }
@@ -398,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="category-tag" style="color:var(--accent-amber);">
           <i class="fa-solid fa-pen-to-square"></i> ${slide.category} • ${slide.tag}
         </div>
-        <div class="slide-index-pill" style="border-color:var(--accent-amber); color:var(--accent-amber);">素養挑戰題</div>
+        <div class="slide-index-pill" style="border-color:var(--accent-amber); color:var(--accent-amber);">素養挑戰題 (自動同步成績)</div>
       </div>
       <h2 class="slide-main-title">${slide.title}</h2>
       <div class="slide-subtitle">${slide.subtitle}</div>
@@ -417,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // 4. 處理測驗選擇與全答完自動串接 Google Sheet
+  // 4. 點擊素養題選項後「完全自動同步發送」，100% 無需學生按送出
   window.handleQuizSelect = function (slideId, optionIndex) {
     if (userQuizAnswers[slideId]) return; // 已回答過
 
@@ -433,20 +435,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // 重新渲染畫面呈現解析
     renderSlide(currentSlideIndex);
 
-    // 檢查是否已完成全部 10 題素養試題
-    const quizSlides = slidesData.filter((s) => s.type === "quiz");
-    const answeredCount = Object.keys(userQuizAnswers).length;
-
-    if (answeredCount >= quizSlides.length && !hasAutoSubmitted) {
-      hasAutoSubmitted = true;
-      // 延遲 1.5 秒讓使用者看到第 10 題解析後自動同步
-      setTimeout(() => {
-        window.autoSubmitQuizToGoogleSheet();
-      }, 1500);
-    }
+    // 點擊即刻自動同步發送至 Google Sheet (無需任何按鈕)
+    window.autoSubmitQuizToGoogleSheet();
   };
 
-  // 當全選題完成時，自動發送至 Google Sheet
+  // 當選擇選項時，自動背景發送至 Google Sheet
   window.autoSubmitQuizToGoogleSheet = function() {
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
     let correctCount = 0;
@@ -461,6 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    const answeredCount = Object.keys(userQuizAnswers).length;
     const score = correctCount * 10;
     const name = window.studentInfo.name || "學生";
     const className = window.studentInfo.studentId || "未填寫學號";
@@ -470,7 +464,7 @@ document.addEventListener("DOMContentLoaded", () => {
       className: className,
       score: `${score} 分`,
       correctCount: correctCount,
-      feedback: "完成全部 10 題素養測驗（自動同步）",
+      feedback: `素養測驗進行中 (${answeredCount}/10題自動同步發送)`,
       details: quizDetails.join("; ")
     };
 
@@ -482,9 +476,13 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).then(() => {
-      window.showToast(`🎉 恭喜 ${name}！您已完成 10 題素養測驗，得分 ${score} 分！成績已自動同步至 Google Sheet！`);
+      if (answeredCount >= quizSlides.length) {
+        window.showToast(`🎉 恭喜 ${name}！您已完成全部 10 題素養測驗，得分 ${score} 分！成績已自動發送至 Google Sheet 試算表！`);
+      } else {
+        window.showToast(`✅ 答題紀錄已自動同步寫入 Google Sheet (${name}，目前得分: ${score} 分)`);
+      }
     }).catch(() => {
-      window.showToast(`🎉 恭喜 ${name} 完成 10 題素養測驗，得分 ${score} 分！紀錄已發送至 Google Sheet。`);
+      window.showToast(`✅ 答題紀錄已自動同步寫入 Google Sheet (${name}，目前得分: ${score} 分)`);
     });
   };
 
@@ -516,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sheetQuizScoreDisplay.textContent = `${score} / 100 分`;
     }
     if (sheetQuizDetailDisplay) {
-      sheetQuizDetailDisplay.textContent = `已完成 ${answeredCount} / 10 題測驗，答對 ${correctCount} 題`;
+      sheetQuizDetailDisplay.textContent = `已完成 ${answeredCount} / 10 題測驗，答對 ${correctCount} 題 (系統實時自動同步中)`;
     }
     if (sheetWebAppUrl) {
       sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
@@ -539,8 +537,8 @@ document.addEventListener("DOMContentLoaded", () => {
       toastNotification.style.opacity = "0";
       setTimeout(() => {
         toastNotification.style.display = "none";
-      }, 5000);
-    }, 5000);
+      }, 4000);
+    }, 4000);
   };
 
   // 傳送資料至 Google Sheet
@@ -788,7 +786,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (overviewBtn) overviewBtn.addEventListener("click", openOverviewModal);
-  if (closeModalBtn) closeModalBtn.addEventListener("click", closeOverviewModal);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeModalBtn);
   if (overviewModal) {
     overviewModal.addEventListener("click", (e) => {
       if (e.target === overviewModal) closeOverviewModal();
