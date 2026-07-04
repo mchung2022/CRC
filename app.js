@@ -41,6 +41,40 @@ document.addEventListener("DOMContentLoaded", () => {
   if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
   if (jumpInput) jumpInput.max = totalSlides;
 
+  // 全域換頁函式 (提供 HTML onclick 與 EventListeners 調用)
+  window.goToSlide = function(index) {
+    if (index >= 0 && index < totalSlides) {
+      renderSlide(index);
+    }
+  };
+
+  window.prevSlide = function() {
+    if (currentSlideIndex > 0) {
+      window.goToSlide(currentSlideIndex - 1);
+    } else if (isAutoplay) {
+      window.goToSlide(totalSlides - 1); // 自動輪播倒退循環
+    }
+    if (isAutoplay) resetAutoplayTimer();
+  };
+
+  window.nextSlide = function() {
+    if (currentSlideIndex < totalSlides - 1) {
+      window.goToSlide(currentSlideIndex + 1);
+    } else {
+      // 若在最後一頁且開啟輪播，回到第一頁循環
+      window.goToSlide(0);
+    }
+    if (isAutoplay) resetAutoplayTimer();
+  };
+
+  window.toggleAutoplay = function() {
+    if (isAutoplay) {
+      stopAutoplay();
+    } else {
+      startAutoplay();
+    }
+  };
+
   // 1. 初始化與更新側邊欄選單
   function renderSidebar(filterQuery = "") {
     if (!slideListContainer) return;
@@ -57,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
       item.className = `slide-item ${index === currentSlideIndex ? "active" : ""}`;
       item.id = `sidebar-item-${index}`;
       item.onclick = () => {
-        goToSlide(index);
+        window.goToSlide(index);
         if (isAutoplay) resetAutoplayTimer();
       };
 
@@ -86,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const card = document.createElement("div");
       card.className = `grid-thumb-card ${index === currentSlideIndex ? "active" : ""}`;
       card.onclick = () => {
-        goToSlide(index);
+        window.goToSlide(index);
         closeOverviewModal();
         if (isAutoplay) resetAutoplayTimer();
       };
@@ -247,36 +281,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSlide(currentSlideIndex);
   };
 
-  // 5. 導覽換頁控制
-  function goToSlide(index) {
-    if (index >= 0 && index < totalSlides) {
-      renderSlide(index);
-    }
-  }
-
-  function prevSlide() {
-    if (currentSlideIndex > 0) {
-      goToSlide(currentSlideIndex - 1);
-    } else if (isAutoplay) {
-      goToSlide(totalSlides - 1); // 自動輪播倒退循環
-    }
-  }
-
-  function nextSlide() {
-    if (currentSlideIndex < totalSlides - 1) {
-      goToSlide(currentSlideIndex + 1);
-    } else {
-      // 若在最後一頁且開啟輪播，回到第一頁循環
-      goToSlide(0);
-    }
-  }
-
   // 6. 自動輪播 (Autoplay / Carousel) 控制邏輯
   function startAutoplay() {
     isAutoplay = true;
     updateAutoplayUI();
     autoplayTimer = setInterval(() => {
-      nextSlide();
+      window.nextSlide();
     }, autoplaySpeed);
   }
 
@@ -289,19 +299,11 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAutoplayUI();
   }
 
-  function toggleAutoplay() {
-    if (isAutoplay) {
-      stopAutoplay();
-    } else {
-      startAutoplay();
-    }
-  }
-
   function resetAutoplayTimer() {
     if (autoplayTimer) {
       clearInterval(autoplayTimer);
       autoplayTimer = setInterval(() => {
-        nextSlide();
+        window.nextSlide();
       }, autoplaySpeed);
     }
   }
@@ -325,8 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 7. 事件監聽設定
-  if (autoplayBtn) autoplayBtn.addEventListener("click", toggleAutoplay);
-  if (playPauseNavBtn) playPauseNavBtn.addEventListener("click", toggleAutoplay);
+  if (autoplayBtn) autoplayBtn.addEventListener("click", window.toggleAutoplay);
+  if (playPauseNavBtn) playPauseNavBtn.addEventListener("click", window.toggleAutoplay);
 
   if (autoplaySpeedSelect) {
     autoplaySpeedSelect.addEventListener("change", (e) => {
@@ -342,8 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btn) {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        prevSlide();
-        if (isAutoplay) resetAutoplayTimer();
+        window.prevSlide();
       });
     }
   });
@@ -352,8 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btn) {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        nextSlide();
-        if (isAutoplay) resetAutoplayTimer();
+        window.nextSlide();
       });
     }
   });
@@ -363,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const handleJump = (e) => {
       const val = parseInt(e.target.value);
       if (!isNaN(val) && val >= 1 && val <= totalSlides) {
-        goToSlide(val - 1);
+        window.goToSlide(val - 1);
         if (isAutoplay) resetAutoplayTimer();
       }
     };
@@ -391,12 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleSwipe() {
     const swipeThreshold = 50;
     if (touchEndX < touchStartX - swipeThreshold) {
-      nextSlide();
-      if (isAutoplay) resetAutoplayTimer();
+      window.nextSlide();
     }
     if (touchEndX > touchStartX + swipeThreshold) {
-      prevSlide();
-      if (isAutoplay) resetAutoplayTimer();
+      window.prevSlide();
     }
   }
 
@@ -405,17 +403,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
 
     if (e.key === "ArrowLeft" || e.key === "PageUp") {
-      prevSlide();
-      if (isAutoplay) resetAutoplayTimer();
+      window.prevSlide();
     } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " || e.key === "Enter") {
       e.preventDefault();
-      nextSlide();
-      if (isAutoplay) resetAutoplayTimer();
+      window.nextSlide();
     } else if (e.key === "Home") {
-      goToSlide(0);
+      window.goToSlide(0);
       if (isAutoplay) resetAutoplayTimer();
     } else if (e.key === "End") {
-      goToSlide(totalSlides - 1);
+      window.goToSlide(totalSlides - 1);
       if (isAutoplay) resetAutoplayTimer();
     }
   });

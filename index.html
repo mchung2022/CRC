@@ -21,7 +21,7 @@
     <div class="nav-actions">
       <!-- 自動輪播控制按鈕與速率選擇 -->
       <div class="autoplay-control-group">
-        <button class="btn-icon" id="autoplayBtn" title="開啟/暫停 自動輪播 (Auto-Play)">
+        <button class="btn-icon" id="autoplayBtn" onclick="window.toggleAutoplay()" title="開啟/暫停 自動輪播 (Auto-Play)">
           <i class="fa-solid fa-play"></i>
         </button>
         <select id="autoplaySpeedSelect" class="speed-select" title="選擇輪播速度">
@@ -70,17 +70,18 @@
     <!-- Main Slide Presentation Viewport -->
     <main class="viewport">
       <div class="slide-stage" id="slideStage">
-        <!-- Floating Stage Left & Right Navigation Arrows -->
-        <button class="stage-nav-btn stage-prev-btn" id="stagePrevBtn" title="上一頁 (← 鍵)">
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
-        <button class="stage-nav-btn stage-next-btn" id="stageNextBtn" title="下一頁 (→ 鍵 / 空白鍵)">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
-
+        <!-- 簡報卡片容器 -->
         <div class="slide-card-wrapper" id="slideCardWrapper">
           <!-- JS 動態渲染目前簡報頁面 -->
         </div>
+
+        <!-- 懸浮切換按鈕，放在卡片上方確保 z-index 不被覆蓋 -->
+        <button class="stage-nav-btn stage-prev-btn" id="stagePrevBtn" onclick="window.prevSlide()" title="上一頁 (← 鍵)">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button class="stage-nav-btn stage-next-btn" id="stageNextBtn" onclick="window.nextSlide()" title="下一頁 (→ 鍵 / 空白鍵)">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
       </div>
 
       <!-- Bottom Controls & Progress Bar -->
@@ -98,13 +99,13 @@
         </div>
 
         <div class="nav-buttons">
-          <button class="btn-nav" id="playPauseNavBtn">
+          <button class="btn-nav" id="playPauseNavBtn" onclick="window.toggleAutoplay()">
             <i class="fa-solid fa-play"></i> 自動輪播
           </button>
-          <button class="btn-nav" id="prevBtn">
+          <button class="btn-nav" id="prevBtn" onclick="window.prevSlide()">
             <i class="fa-solid fa-arrow-left"></i> 上一頁
           </button>
-          <button class="btn-nav" id="nextBtn">
+          <button class="btn-nav" id="nextBtn" onclick="window.nextSlide()">
             下一頁 <i class="fa-solid fa-arrow-right"></i>
           </button>
         </div>
