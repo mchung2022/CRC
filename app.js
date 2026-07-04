@@ -8,6 +8,11 @@ window.studentInfo = {
   studentId: localStorage.getItem("crc_student_id") || ""
 };
 
+// 全域輪播狀態變數
+window.isAutoplay = false;
+window.autoplayTimer = null;
+window.autoplaySpeed = 5000;
+
 // 提交登錄資訊全域函式 (確保頁面一載入即可調用，絕對不阻擋)
 window.submitMandatoryStudentEntry = function() {
   const nameInput = document.getElementById("entryStudentName");
@@ -18,7 +23,6 @@ window.submitMandatoryStudentEntry = function() {
   let name = nameInput ? nameInput.value.trim() : "";
   let id = idInput ? idInput.value.trim() : "";
 
-  // 若未輸入姓名，預設帶入「學生」，確保點擊永遠能通過
   if (!name) {
     name = "學生";
   }
@@ -34,7 +38,6 @@ window.submitMandatoryStudentEntry = function() {
     headerText.textContent = `學生：${name} (${finalId})`;
   }
 
-  // 從 DOM 樹中完全物理移除遮罩
   if (modal) {
     try {
       modal.remove();
@@ -43,7 +46,6 @@ window.submitMandatoryStudentEntry = function() {
     }
   }
 
-  // 強制渲染與觸發 Slide 0 顯現
   if (typeof window.goToSlide === 'function') {
     window.goToSlide(0);
   }
@@ -58,7 +60,6 @@ window.submitMandatoryStudentEntry = function() {
 window.editStudentInfo = function() {
   let modal = document.getElementById("mandatoryStudentModal");
   if (!modal) {
-    // 若已被 remove，動態重新創建精簡 Modal
     const div = document.createElement("div");
     div.className = "modal-overlay active";
     div.id = "mandatoryStudentModal";
@@ -81,15 +82,96 @@ window.editStudentInfo = function() {
   }
 };
 
+// 全域輪播開關控制 (全域極速響應)
+window.toggleAutoplay = function() {
+  if (window.isAutoplay) {
+    window.stopAutoplay();
+  } else {
+    window.startAutoplay();
+  }
+};
+
+window.startAutoplay = function() {
+  window.isAutoplay = true;
+  window.updateAutoplayUI();
+  
+  // 啟動時立即換到下一頁，呈現即時響應
+  if (typeof window.nextSlide === 'function') {
+    window.nextSlide();
+  }
+
+  if (window.autoplayTimer) clearInterval(window.autoplayTimer);
+  window.autoplayTimer = setInterval(() => {
+    if (typeof window.nextSlide === 'function') {
+      window.nextSlide();
+    }
+  }, window.autoplaySpeed);
+
+  if (typeof window.showToast === 'function') {
+    const sec = Math.round(window.autoplaySpeed / 1000);
+    window.showToast(`▶ 自動輪播已開啟 (每 ${sec} 秒自動切換下一頁)`);
+  }
+};
+
+window.stopAutoplay = function() {
+  window.isAutoplay = false;
+  if (window.autoplayTimer) {
+    clearInterval(window.autoplayTimer);
+    window.autoplayTimer = null;
+  }
+  window.updateAutoplayUI();
+  if (typeof window.showToast === 'function') {
+    window.showToast("❚❚ 自動輪播已暫停");
+  }
+};
+
+window.resetAutoplayTimer = function() {
+  if (window.isAutoplay && window.autoplayTimer) {
+    clearInterval(window.autoplayTimer);
+    window.autoplayTimer = setInterval(() => {
+      if (typeof window.nextSlide === 'function') {
+        window.nextSlide();
+      }
+    }, window.autoplaySpeed);
+  }
+};
+
+window.updateAutoplayUI = function() {
+  const autoplayBtn = document.getElementById("autoplayBtn");
+  const playPauseNavBtn = document.getElementById("playPauseNavBtn");
+  const autoplayStatusBadge = document.getElementById("autoplayStatusBadge");
+
+  if (window.isAutoplay) {
+    if (autoplayBtn) {
+      autoplayBtn.classList.add("active");
+      autoplayBtn.innerHTML = '<i class="fa-solid fa-pause"></i> ❚❚';
+    }
+    if (playPauseNavBtn) {
+      playPauseNavBtn.classList.add("active");
+      playPauseNavBtn.innerHTML = '<i class="fa-solid fa-pause"></i> ❚❚ 暫停輪播';
+    }
+    if (autoplayStatusBadge) {
+      autoplayStatusBadge.classList.add("active");
+    }
+  } else {
+    if (autoplayBtn) {
+      autoplayBtn.classList.remove("active");
+      autoplayBtn.innerHTML = '<i class="fa-solid fa-play"></i> ▶';
+    }
+    if (playPauseNavBtn) {
+      playPauseNavBtn.classList.remove("active");
+      playPauseNavBtn.innerHTML = '<i class="fa-solid fa-play"></i> ▶ 自動輪播';
+    }
+    if (autoplayStatusBadge) {
+      autoplayStatusBadge.classList.remove("active");
+    }
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   let currentSlideIndex = 0;
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
-
-  // 自動輪播狀態
-  let isAutoplay = false;
-  let autoplayTimer = null;
-  let autoplaySpeed = 5000; // 預設 5 秒
 
   // 使用者部署的官方 Google Apps Script Web App URL
   const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycby2GlXyEi1w3YbB8IJ7U66P6UOenOhdpayaNo9Wy8xLUZdfCY9bn4y2OfIkoFwhkcFv/exec";
@@ -123,11 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const entrySubmitBtn = document.getElementById("entrySubmitBtn");
   const headerStudentText = document.getElementById("headerStudentText");
 
-  // 輪播控制 DOM
-  const autoplayBtn = document.getElementById("autoplayBtn");
-  const playPauseNavBtn = document.getElementById("playPauseNavBtn");
+  // 輪播速度選擇 DOM
   const autoplaySpeedSelect = document.getElementById("autoplaySpeedSelect");
-  const autoplayStatusBadge = document.getElementById("autoplayStatusBadge");
 
   // Google Sheet DOM
   const googleSheetModal = document.getElementById("googleSheetModal");
@@ -193,10 +272,10 @@ document.addEventListener("DOMContentLoaded", () => {
   window.prevSlide = function() {
     if (currentSlideIndex > 0) {
       window.goToSlide(currentSlideIndex - 1);
-    } else if (isAutoplay) {
+    } else if (window.isAutoplay) {
       window.goToSlide(totalSlides - 1); // 自動輪播倒退循環
     }
-    if (isAutoplay) resetAutoplayTimer();
+    if (window.isAutoplay) window.resetAutoplayTimer();
   };
 
   window.nextSlide = function() {
@@ -206,15 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // 若在最後一頁且開啟輪播，回到第一頁循環
       window.goToSlide(0);
     }
-    if (isAutoplay) resetAutoplayTimer();
-  };
-
-  window.toggleAutoplay = function() {
-    if (isAutoplay) {
-      stopAutoplay();
-    } else {
-      startAutoplay();
-    }
+    if (window.isAutoplay) window.resetAutoplayTimer();
   };
 
   // 1. 初始化與更新側邊欄選單
@@ -234,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
       item.id = `sidebar-item-${index}`;
       item.onclick = () => {
         window.goToSlide(index);
-        if (isAutoplay) resetAutoplayTimer();
+        if (window.isAutoplay) window.resetAutoplayTimer();
       };
 
       const typeBadge = slide.type === 'quiz' ? '<span class="slide-item-badge" style="color:#f59e0b;">素養題</span>' : '';
@@ -247,7 +318,6 @@ document.addEventListener("DOMContentLoaded", () => {
       slideListContainer.appendChild(item);
     });
 
-    // 將當前亮顯項自動滾動入選單視域中
     const activeItem = document.getElementById(`sidebar-item-${currentSlideIndex}`);
     if (activeItem) {
       activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -264,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
       card.onclick = () => {
         window.goToSlide(index);
         closeOverviewModal();
-        if (isAutoplay) resetAutoplayTimer();
+        if (window.isAutoplay) window.resetAutoplayTimer();
       };
 
       const isQuiz = slide.type === 'quiz';
@@ -300,8 +370,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const isLast = index === totalSlides - 1;
     if (prevBtn) prevBtn.disabled = isFirst;
     if (stagePrevBtn) stagePrevBtn.disabled = isFirst;
-    if (nextBtn) nextBtn.disabled = isLast && !isAutoplay;
-    if (stageNextBtn) stageNextBtn.disabled = isLast && !isAutoplay;
+    if (nextBtn) nextBtn.disabled = isLast && !window.isAutoplay;
+    if (stageNextBtn) stageNextBtn.disabled = isLast && !window.isAutoplay;
 
     // 如果是 Quiz 類型，調用渲染 Quiz
     if (slide.type === "quiz") {
@@ -419,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // 4. 點擊素養題選項後「完全自動同步發送」，100% 無需學生按送出
+  // 4. 點擊素養題選項後「完全自動同步發送」
   window.handleQuizSelect = function (slideId, optionIndex) {
     if (userQuizAnswers[slideId]) return; // 已回答過
 
@@ -432,10 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
       isCorrect: isCorrect
     };
 
-    // 重新渲染畫面呈現解析
     renderSlide(currentSlideIndex);
-
-    // 點擊即刻自動同步發送至 Google Sheet (無需任何按鈕)
     window.autoSubmitQuizToGoogleSheet();
   };
 
@@ -488,11 +555,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 5. Google Sheet 串接對話框控制與資料計算
   window.openGoogleSheetModal = function() {
-    // 預先填入封面記錄的姓名學號
     if (sheetStudentName && window.studentInfo.name) sheetStudentName.value = window.studentInfo.name;
     if (sheetClassName && window.studentInfo.studentId) sheetClassName.value = window.studentInfo.studentId;
 
-    // 計算測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
     let correctCount = 0;
     let answeredCount = 0;
@@ -557,7 +622,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const targetUrl = customUrl || DEFAULT_GAS_URL;
     localStorage.setItem("crc_google_sheet_url", targetUrl);
 
-    // 彙整測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
     let correctCount = 0;
     let quizDetails = [];
@@ -585,7 +649,6 @@ document.addEventListener("DOMContentLoaded", () => {
       submitToSheetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在傳送...';
     }
 
-    // 發送 POST 請求至 Google Apps Script Web App
     fetch(targetUrl, {
       method: "POST",
       mode: "no-cors",
@@ -611,51 +674,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // 6. 自動輪播 (Autoplay / Carousel) 控制邏輯
-  function startAutoplay() {
-    isAutoplay = true;
-    updateAutoplayUI();
-    autoplayTimer = setInterval(() => {
-      window.nextSlide();
-    }, autoplaySpeed);
-  }
-
-  function stopAutoplay() {
-    isAutoplay = false;
-    if (autoplayTimer) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = null;
-    }
-    updateAutoplayUI();
-  }
-
-  function resetAutoplayTimer() {
-    if (autoplayTimer) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = setInterval(() => {
-        window.nextSlide();
-      }, autoplaySpeed);
-    }
-  }
-
-  function updateAutoplayUI() {
-    if (!autoplayBtn || !playPauseNavBtn || !autoplayStatusBadge) return;
-    const playIcon = autoplayBtn.querySelector("i");
-    if (isAutoplay) {
-      if (playIcon) playIcon.className = "fa-solid fa-pause";
-      autoplayBtn.classList.add("active");
-      playPauseNavBtn.classList.add("active");
-      playPauseNavBtn.innerHTML = '<i class="fa-solid fa-pause"></i> 暫停輪播';
-      autoplayStatusBadge.classList.add("active");
-    } else {
-      if (playIcon) playIcon.className = "fa-solid fa-play";
-      autoplayBtn.classList.remove("active");
-      playPauseNavBtn.classList.remove("active");
-      playPauseNavBtn.innerHTML = '<i class="fa-solid fa-play"></i> 自動輪播';
-      autoplayStatusBadge.classList.remove("active");
-    }
-  }
-
   // 7. 事件監聽與按鍵設定
   if (entrySubmitBtn) {
     entrySubmitBtn.addEventListener("click", window.submitMandatoryStudentEntry);
@@ -672,14 +690,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (autoplayBtn) autoplayBtn.addEventListener("click", window.toggleAutoplay);
-  if (playPauseNavBtn) playPauseNavBtn.addEventListener("click", window.toggleAutoplay);
-
   if (autoplaySpeedSelect) {
     autoplaySpeedSelect.addEventListener("change", (e) => {
-      autoplaySpeed = parseInt(e.target.value);
-      if (isAutoplay) {
-        resetAutoplayTimer();
+      window.autoplaySpeed = parseInt(e.target.value);
+      if (window.isAutoplay) {
+        window.resetAutoplayTimer();
       }
     });
   }
@@ -703,13 +718,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 頁碼輸入跳頁 (對應 change 與 input)
   if (jumpInput) {
     const handleJump = (e) => {
       const val = parseInt(e.target.value);
       if (!isNaN(val) && val >= 1 && val <= totalSlides) {
         window.goToSlide(val - 1);
-        if (isAutoplay) resetAutoplayTimer();
+        if (window.isAutoplay) window.resetAutoplayTimer();
       }
     };
     jumpInput.addEventListener("change", handleJump);
@@ -718,7 +732,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 觸控滑動手勢支援 (Touch Swipe on Mobile/Tablet)
+  // 觸控滑動手勢支援
   let touchStartX = 0;
   let touchEndX = 0;
 
@@ -743,7 +757,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 鍵盤快捷鍵 (方向鍵左右, 空白鍵, Enter)
+  // 鍵盤快捷鍵
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
 
@@ -754,10 +768,10 @@ document.addEventListener("DOMContentLoaded", () => {
       window.nextSlide();
     } else if (e.key === "Home") {
       window.goToSlide(0);
-      if (isAutoplay) resetAutoplayTimer();
+      if (window.isAutoplay) window.resetAutoplayTimer();
     } else if (e.key === "End") {
       window.goToSlide(totalSlides - 1);
-      if (isAutoplay) resetAutoplayTimer();
+      if (window.isAutoplay) window.resetAutoplayTimer();
     }
   });
 
