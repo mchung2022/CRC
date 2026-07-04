@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const progressBarFill = document.getElementById("progressBarFill");
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
+  const stagePrevBtn = document.getElementById("stagePrevBtn");
+  const stageNextBtn = document.getElementById("stageNextBtn");
   const sidebar = document.getElementById("sidebar");
   const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
   const overviewBtn = document.getElementById("overviewBtn");
@@ -39,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
   if (jumpInput) jumpInput.max = totalSlides;
 
-  // 1. 初始化側邊欄選單
+  // 1. 初始化與更新側邊欄選單
   function renderSidebar(filterQuery = "") {
     if (!slideListContainer) return;
     slideListContainer.innerHTML = "";
@@ -53,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const item = document.createElement("div");
       item.className = `slide-item ${index === currentSlideIndex ? "active" : ""}`;
+      item.id = `sidebar-item-${index}`;
       item.onclick = () => {
         goToSlide(index);
         if (isAutoplay) resetAutoplayTimer();
@@ -67,6 +70,12 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       slideListContainer.appendChild(item);
     });
+
+    // 將當前亮顯項自動滾動入選單視域中
+    const activeItem = document.getElementById(`sidebar-item-${currentSlideIndex}`);
+    if (activeItem) {
+      activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   // 2. 初始化總覽 Modal 網格
@@ -110,9 +119,13 @@ document.addEventListener("DOMContentLoaded", () => {
       progressBarFill.style.width = `${progressPercent}%`;
     }
 
-    // 按鈕狀態更新
-    if (prevBtn) prevBtn.disabled = index === 0;
-    if (nextBtn) nextBtn.disabled = index === totalSlides - 1 && !isAutoplay;
+    // 底部與懸浮導覽按鈕狀態更新
+    const isFirst = index === 0;
+    const isLast = index === totalSlides - 1;
+    if (prevBtn) prevBtn.disabled = isFirst;
+    if (stagePrevBtn) stagePrevBtn.disabled = isFirst;
+    if (nextBtn) nextBtn.disabled = isLast && !isAutoplay;
+    if (stageNextBtn) stageNextBtn.disabled = isLast && !isAutoplay;
 
     // 如果是 Quiz 類型，調用渲染 Quiz
     if (slide.type === "quiz") {
@@ -121,7 +134,12 @@ document.addEventListener("DOMContentLoaded", () => {
       renderContentSlide(slide);
     }
 
-    // 更新側邊欄與 Modal 亮顯狀態
+    // 重新觸發換頁淡入過渡動畫
+    slideContainer.classList.remove("slide-anim");
+    void slideContainer.offsetWidth; // 強制 DOM 重繪
+    slideContainer.classList.add("slide-anim");
+
+    // 更新側邊欄亮顯與滾動位置
     renderSidebar(searchInput ? searchInput.value : "");
   }
 
@@ -319,27 +337,39 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (prevBtn) {
-    prevBtn.addEventListener("click", () => {
-      prevSlide();
-      if (isAutoplay) resetAutoplayTimer();
-    });
-  }
+  // 綁定底部與懸浮換頁按鈕
+  [prevBtn, stagePrevBtn].forEach((btn) => {
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        prevSlide();
+        if (isAutoplay) resetAutoplayTimer();
+      });
+    }
+  });
 
-  if (nextBtn) {
-    nextBtn.addEventListener("click", () => {
-      nextSlide();
-      if (isAutoplay) resetAutoplayTimer();
-    });
-  }
+  [nextBtn, stageNextBtn].forEach((btn) => {
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        nextSlide();
+        if (isAutoplay) resetAutoplayTimer();
+      });
+    }
+  });
 
+  // 頁碼輸入跳頁 (對應 change 與 input)
   if (jumpInput) {
-    jumpInput.addEventListener("change", (e) => {
+    const handleJump = (e) => {
       const val = parseInt(e.target.value);
       if (!isNaN(val) && val >= 1 && val <= totalSlides) {
         goToSlide(val - 1);
         if (isAutoplay) resetAutoplayTimer();
       }
+    };
+    jumpInput.addEventListener("change", handleJump);
+    jumpInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") handleJump(e);
     });
   }
 
@@ -370,14 +400,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 鍵盤快捷鍵 (方向鍵左右, 空白鍵)
+  // 鍵盤快捷鍵 (方向鍵左右, 空白鍵, Enter)
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
 
     if (e.key === "ArrowLeft" || e.key === "PageUp") {
       prevSlide();
       if (isAutoplay) resetAutoplayTimer();
-    } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+    } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " || e.key === "Enter") {
       e.preventDefault();
       nextSlide();
       if (isAutoplay) resetAutoplayTimer();

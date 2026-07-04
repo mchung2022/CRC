@@ -313,11 +313,56 @@ body {
 
 .slide-stage {
   flex: 1;
-  padding: 2rem;
+  padding: 2rem 5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow-y: auto;
+  position: relative;
+}
+
+/* Floating Stage Nav Buttons */
+.stage-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 80;
+  transition: var(--transition);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.stage-prev-btn {
+  left: 1.5rem;
+}
+
+.stage-next-btn {
+  right: 1.5rem;
+}
+
+.stage-nav-btn:hover:not(:disabled) {
+  background: var(--primary-cyan);
+  color: #fff;
+  border-color: var(--primary-cyan);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 0 25px var(--primary-cyan-glow);
+}
+
+.stage-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
 }
 
 .slide-card-wrapper {
@@ -334,15 +379,18 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes fadeInScale {
-  from {
+.slide-card-wrapper.slide-anim {
+  animation: slideFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideFadeIn {
+  0% {
     opacity: 0;
-    transform: scale(0.97) translateY(10px);
+    transform: scale(0.98) translateY(8px);
   }
-  to {
+  100% {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
@@ -1014,6 +1062,19 @@ body {
     bottom: 0;
     box-shadow: 10px 0 30px rgba(0,0,0,0.5);
   }
+
+  .slide-stage {
+    padding: 1.5rem;
+  }
+
+  .stage-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .stage-prev-btn { left: 0.5rem; }
+  .stage-next-btn { right: 0.5rem; }
 
   .grid-2col, .grid-3col, .cover-stats, .principles-grid {
     grid-template-columns: 1fr;
