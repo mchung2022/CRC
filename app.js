@@ -76,41 +76,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 檢查學生是否已填寫登錄資訊
   function checkStudentLoginState() {
-    if (studentInfo.name && studentInfo.studentId) {
-      if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+    if (studentInfo.name) {
+      if (mandatoryStudentModal) {
+        mandatoryStudentModal.classList.remove("active");
+        mandatoryStudentModal.style.display = "none";
+      }
       if (headerStudentText) {
-        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId})`;
+        headerStudentText.textContent = `學生：${studentInfo.name} (${studentInfo.studentId || '未填寫學號'})`;
       }
     } else {
-      if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+      if (mandatoryStudentModal) {
+        mandatoryStudentModal.classList.add("active");
+        mandatoryStudentModal.style.display = "flex";
+      }
       if (entryStudentName && studentInfo.name) entryStudentName.value = studentInfo.name;
       if (entryStudentId && studentInfo.studentId) entryStudentId.value = studentInfo.studentId;
     }
   }
 
-  // 提交強制登錄資訊
+  // 提交登錄資訊（姓名為必填，學號可選填）
   window.submitMandatoryStudentEntry = function() {
-    const name = entryStudentName ? entryStudentName.value.trim() : "";
-    const id = entryStudentId ? entryStudentId.value.trim() : "";
+    const nameInput = document.getElementById("entryStudentName");
+    const idInput = document.getElementById("entryStudentId");
+    const modal = document.getElementById("mandatoryStudentModal");
+    const errAlert = document.getElementById("entryErrorAlert");
+    const headerText = document.getElementById("headerStudentText");
 
-    if (!name || !id) {
-      if (entryErrorAlert) entryErrorAlert.style.display = "flex";
-      if (!name && entryStudentName) entryStudentName.focus();
-      else if (!id && entryStudentId) entryStudentId.focus();
+    const name = nameInput ? nameInput.value.trim() : "";
+    const id = idInput ? idInput.value.trim() : "";
+
+    if (!name) {
+      if (errAlert) {
+        errAlert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 請輸入您的學生姓名！';
+        errAlert.style.display = "flex";
+      }
+      if (nameInput) nameInput.focus();
       return;
     }
 
-    if (entryErrorAlert) entryErrorAlert.style.display = "none";
-    studentInfo.name = name;
-    studentInfo.studentId = id;
-    localStorage.setItem("crc_student_name", name);
-    localStorage.setItem("crc_student_id", id);
+    if (errAlert) errAlert.style.display = "none";
 
-    if (headerStudentText) {
-      headerStudentText.textContent = `學生：${name} (${id})`;
+    const finalId = id || "未填寫學號";
+    studentInfo.name = name;
+    studentInfo.studentId = finalId;
+
+    localStorage.setItem("crc_student_name", name);
+    localStorage.setItem("crc_student_id", finalId);
+
+    if (headerText) {
+      headerText.textContent = `學生：${name} (${finalId})`;
     }
 
-    if (mandatoryStudentModal) mandatoryStudentModal.classList.remove("active");
+    // 關閉 Modal 遮罩
+    if (modal) {
+      modal.classList.remove("active");
+      modal.style.display = "none";
+    }
+
     window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
   };
 
@@ -118,7 +140,10 @@ document.addEventListener("DOMContentLoaded", () => {
   window.editStudentInfo = function() {
     if (entryStudentName) entryStudentName.value = studentInfo.name;
     if (entryStudentId) entryStudentId.value = studentInfo.studentId;
-    if (mandatoryStudentModal) mandatoryStudentModal.classList.add("active");
+    if (mandatoryStudentModal) {
+      mandatoryStudentModal.classList.add("active");
+      mandatoryStudentModal.style.display = "flex";
+    }
   };
 
   // 保存封面填寫的學生個人資訊
@@ -612,7 +637,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 7. 事件監聽設定
+  // 7. 事件監聽與按鍵設定
+  if (entryStudentName) {
+    entryStudentName.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") window.submitMandatoryStudentEntry();
+    });
+  }
+  if (entryStudentId) {
+    entryStudentId.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") window.submitMandatoryStudentEntry();
+    });
+  }
+
   if (autoplayBtn) autoplayBtn.addEventListener("click", window.toggleAutoplay);
   if (playPauseNavBtn) playPauseNavBtn.addEventListener("click", window.toggleAutoplay);
 
