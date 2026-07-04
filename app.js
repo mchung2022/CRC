@@ -11,8 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let autoplayTimer = null;
   let autoplaySpeed = 5000; // 預設 5 秒
 
-  // 預設與使用者設定的 Google Apps Script Web App URL
-  let googleSheetEndpoint = localStorage.getItem("crc_google_sheet_url") || "https://script.google.com/macros/s/AKfycbz_demo_crc_endpoint/exec";
+  // 使用者部署的官方 Google Apps Script Web App URL
+  const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycby2GlXyEi1w3YbB8IJ7U66P6UOenOhdpayaNo9Wy8xLUZdfCY9bn4y2OfIkoFwhkcFv/exec";
+  let googleSheetEndpoint = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
 
   // DOM 元素引用
   const slideContainer = document.getElementById("slideCardWrapper");
@@ -55,8 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
   if (jumpInput) jumpInput.max = totalSlides;
-  if (sheetWebAppUrl && localStorage.getItem("crc_google_sheet_url")) {
-    sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url");
+  if (sheetWebAppUrl) {
+    sheetWebAppUrl.value = googleSheetEndpoint;
   }
 
   // 全域換頁函式 (提供 HTML onclick 與 EventListeners 調用)
@@ -325,6 +326,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sheetQuizDetailDisplay) {
       sheetQuizDetailDisplay.textContent = `已完成 ${answeredCount} / 10 題測驗，答對 ${correctCount} 題`;
     }
+    if (sheetWebAppUrl) {
+      sheetWebAppUrl.value = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
+    }
 
     if (googleSheetModal) googleSheetModal.classList.add("active");
   };
@@ -360,10 +364,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const targetUrl = customUrl || googleSheetEndpoint;
-    if (customUrl) {
-      localStorage.setItem("crc_google_sheet_url", customUrl);
-    }
+    const targetUrl = customUrl || DEFAULT_GAS_URL;
+    localStorage.setItem("crc_google_sheet_url", targetUrl);
 
     // 彙整測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
@@ -403,7 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify(payload)
     }).then(() => {
       window.closeGoogleSheetModal();
-      window.showToast("🎉 成功傳送學習紀錄與成績至 Google Sheet！");
+      window.showToast("🎉 成功傳送學習紀錄與成績至您的 Google Sheet 試算表！");
       if (submitToSheetBtn) {
         submitToSheetBtn.disabled = false;
         submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
@@ -412,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Google Sheet 提交錯誤:", err);
       // no-cors 下有時跨網域仍成功寫入
       window.closeGoogleSheetModal();
-      window.showToast("🎉 已發送資料至 Google Sheet！");
+      window.showToast("🎉 已發送資料至您的 Google Sheet 試算表！");
       if (submitToSheetBtn) {
         submitToSheetBtn.disabled = false;
         submitToSheetBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 確定傳送至 Google Sheet';
