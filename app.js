@@ -43,6 +43,11 @@ window.submitMandatoryStudentEntry = function() {
     }
   }
 
+  // 強制渲染與觸發 Slide 0 顯現
+  if (typeof window.goToSlide === 'function') {
+    window.goToSlide(0);
+  }
+
   if (typeof window.showToast === 'function') {
     window.showToast(`歡迎 ${name}！已順利進入 CRC 投影片學習！`);
   }

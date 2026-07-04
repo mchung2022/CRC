@@ -1260,9 +1260,31 @@ body {
     <!-- Main Slide Presentation Viewport -->
     <main class="viewport">
       <div class="slide-stage" id="slideStage">
-        <!-- 簡報卡片容器 -->
-        <div class="slide-card-wrapper" id="slideCardWrapper">
-          <!-- JS 動態渲染目前簡報頁面 -->
+        <!-- 簡報卡片容器（預先載入 Slide 1 靜態內容，確保極速顯現） -->
+        <div class="slide-card-wrapper slide-anim" id="slideCardWrapper">
+          <div class="slide-header-bar">
+            <div class="category-tag"><i class="fa-solid fa-book-open-reader"></i> PART 1: 概述與核心精神 • 簡報封面與學生登錄</div>
+            <div class="slide-index-pill">SLIDE 1 / 50</div>
+          </div>
+          <h2 class="slide-main-title">兒童權利公約 (CRC) 簡介與素養實踐</h2>
+          <div class="slide-subtitle">Convention on the Rights of the Child - 50頁互動教學與情境思辨簡報</div>
+          <div class="slide-body">
+            <div class="cover-hero">
+              <div class="badge-pill"><i class="fa-solid fa-shield-halved"></i> 人權教育與素養實踐</div>
+              <h1 class="cover-title">兒童權利公約 <span class="highlight">CRC</span> 深度導覽</h1>
+              <p class="cover-description">從「慈善保護對象」到「獨立權利主體」的範式轉移 | 完整 50 頁主題簡報與 10 大素養試題</p>
+              <div class="cover-stats" style="margin-top: 1.5rem;">
+                <div class="stat-card"><span class="stat-num">1989</span><span class="stat-label">聯合國通過年份</span></div>
+                <div class="stat-card"><span class="stat-num">54</span><span class="stat-label">條文總數</span></div>
+                <div class="stat-card"><span class="stat-num">4</span><span class="stat-label">核心原則 (4Ps)</span></div>
+                <div class="stat-card"><span class="stat-num">10</span><span class="stat-label">素養情境實作題</span></div>
+              </div>
+              <div class="cover-footer">
+                <span><i class="fa-solid fa-user"></i> 簡報製作：mchung2022</span>
+                <span><i class="fa-solid fa-graduation-cap"></i> 適用對象：國高中公民與社會科、教職員研習、兒少權利宣導</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 懸浮切換按鈕 -->
@@ -1312,7 +1334,7 @@ body {
     <div class="modal-content" style="max-width: 520px; height: auto; padding: 2rem; border-color: var(--primary-cyan); box-shadow: 0 0 40px var(--primary-cyan-glow); position: relative; z-index: 10000;">
       
       <!-- 右上角 ✕ 關閉按鈕 -->
-      <button type="button" class="btn-icon" onclick="var m=document.getElementById('mandatoryStudentModal'); if(m) m.remove();" style="position: absolute; top: 1rem; right: 1rem; z-index: 10001; font-size: 1.2rem; cursor: pointer;" title="跳過直接進入簡報">
+      <button type="button" class="btn-icon" onclick="var m=document.getElementById('mandatoryStudentModal'); if(m) m.remove(); if(window.goToSlide) window.goToSlide(0);" style="position: absolute; top: 1rem; right: 1rem; z-index: 10001; font-size: 1.2rem; cursor: pointer;" title="跳過直接進入簡報">
         ✕
       </button>
 
@@ -1337,7 +1359,7 @@ body {
           <i class="fa-solid fa-circle-exclamation"></i> 請完整填寫姓名後再點擊進入投影片！
         </div>
 
-        <button type="button" class="btn-nav" id="entrySubmitBtn" onclick="if(window.submitMandatoryStudentEntry) window.submitMandatoryStudentEntry(); var m=document.getElementById('mandatoryStudentModal'); if(m) m.remove();" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem; cursor: pointer; z-index: 10002; position: relative;">
+        <button type="button" class="btn-nav" id="entrySubmitBtn" onclick="if(window.submitMandatoryStudentEntry) window.submitMandatoryStudentEntry(); var m=document.getElementById('mandatoryStudentModal'); if(m) m.remove(); if(window.goToSlide) window.goToSlide(0);" style="width: 100%; height: 48px; justify-content: center; font-size: 1.05rem; background: var(--primary-cyan); color: #fff; border-color: var(--primary-cyan); margin-top: 0.5rem; cursor: pointer; z-index: 10002; position: relative;">
           🚀 進入投影片開始學習
         </button>
       </div>
@@ -2690,7 +2712,7 @@ const slidesData = [
           <p>本模組包含 10 題素養情境實作試題：</p>
           <ul class="styled-list">
             <li>當您完成第 10 題回答後，系統將<strong>自動將您的姓名、學號、總得分與詳細答題紀錄同步發送至 Google 試算表</strong>。</li>
-            <li>若您尚未填寫姓名學號，請回首頁第 1 頁填寫，或點擊右上角 `📊` 按鈕填報。</li>
+            <li>若您尚未填寫姓名學號，請回首頁第 1 頁填寫，或點擊右上角「📊」按鈕填報。</li>
           </ul>
         </div>
       </div>
@@ -3158,6 +3180,11 @@ window.submitMandatoryStudentEntry = function() {
     } catch (e) {
       modal.style.display = "none";
     }
+  }
+
+  // 強制渲染與觸發 Slide 0 顯現
+  if (typeof window.goToSlide === 'function') {
+    window.goToSlide(0);
   }
 
   if (typeof window.showToast === 'function') {
