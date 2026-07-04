@@ -8,7 +8,7 @@ const slidesData = [
   {
     id: 1,
     category: "PART 1: 概述與核心精神",
-    tag: "簡報封面",
+    tag: "簡報封面與學生登錄",
     title: "兒童權利公約 (CRC) 簡介與素養實踐",
     subtitle: "Convention on the Rights of the Child - 50頁互動教學與情境思辨簡報",
     icon: "fa-book-open-reader",
@@ -17,8 +17,27 @@ const slidesData = [
       <div class="cover-hero">
         <div class="badge-pill"><i class="fa-solid fa-shield-halved"></i> 人權教育與素養實踐</div>
         <h1 class="cover-title">兒童權利公約 <span class="highlight">CRC</span> 深度導覽</h1>
-        <p class="cover-description">從「慈善保護對象」到「獨立權利主體」的範式轉移 | 完整 50 頁主題簡報與素養導向情境題庫</p>
-        <div class="cover-stats">
+        <p class="cover-description">從「慈善保護對象」到「獨立權利主體」的範式轉移 | 完整 50 頁主題簡報與 10 大素養試題</p>
+        
+        <!-- 學生姓名與學號填報登錄卡片 -->
+        <div class="student-login-card">
+          <div class="sl-card-title"><i class="fa-solid fa-user-pen text-cyan"></i> 請先登記您的姓名與學號（測驗完成將自動同步至 Google Sheet）</div>
+          <div class="sl-input-group">
+            <div class="sl-field">
+              <label for="coverStudentName"><i class="fa-solid fa-user"></i> 學生姓名：</label>
+              <input type="text" id="coverStudentName" class="search-input" placeholder="例如：張小明" onchange="window.saveStudentInfo()" oninput="window.saveStudentInfo()">
+            </div>
+            <div class="sl-field">
+              <label for="coverStudentId"><i class="fa-solid fa-id-card"></i> 學號 / 班級：</label>
+              <input type="text" id="coverStudentId" class="search-input" placeholder="例如：高一乙班 / 112005" onchange="window.saveStudentInfo()" oninput="window.saveStudentInfo()">
+            </div>
+          </div>
+          <div class="sl-status-text" id="studentLoginStatus">
+            <i class="fa-solid fa-circle-check text-green"></i> 資訊填寫後，完成 10 題素養試題系統將自動將成績與答題紀錄同步至 Google 試算表。
+          </div>
+        </div>
+
+        <div class="cover-stats" style="margin-top: 1.5rem;">
           <div class="stat-card">
             <span class="stat-num">1989</span>
             <span class="stat-label">聯合國通過年份</span>
@@ -29,7 +48,7 @@ const slidesData = [
           </div>
           <div class="stat-card">
             <span class="stat-num">4</span>
-            <span class="stat-label">三大原則 (4Ps)</span>
+            <span class="stat-label">核心原則 (4Ps)</span>
           </div>
           <div class="stat-card">
             <span class="stat-num">10</span>
@@ -1236,13 +1255,11 @@ const slidesData = [
           </div>
         </div>
         <div class="info-card">
-          <h3><i class="fa-solid fa-circle-play"></i> 下列 10 題素養情境實作指引</h3>
-          <p>每張情境題均包含：</p>
+          <h3><i class="fa-solid fa-cloud-arrow-up text-cyan"></i> 自動同步 Google Sheet 機制說明</h3>
+          <p>本模組包含 10 題素養情境實作試題：</p>
           <ul class="styled-list">
-            <li><strong>真實案例情境描述</strong></li>
-            <li><strong>四選一單選題試驗</strong></li>
-            <li><strong>即時答案反饋與評量分析</strong></li>
-            <li><strong>CRC 原則詳細法理剖析</strong></li>
+            <li>當您完成第 10 題回答後，系統將<strong>自動將您的姓名、學號、總得分與詳細答題紀錄同步發送至 Google 試算表</strong>。</li>
+            <li>若您尚未填寫姓名學號，請回首頁第 1 頁填寫，或點擊右上角 `📊` 按鈕填報。</li>
           </ul>
         </div>
       </div>
@@ -1327,7 +1344,7 @@ const slidesData = [
     id: 39,
     category: "PART 5: 素養導向情境題",
     tag: "素養題 04",
-    title: "【素養情境題 4】特殊教育學童課堂融入與禁止歧視",
+    title: "【素養情境題 4】特殊需求學生課堂融入與禁止歧視",
     subtitle: "合理調整義務 vs 禁止歧視原則 (Article 2)",
     icon: "fa-wheelchair-move",
     type: "quiz",
@@ -1476,7 +1493,7 @@ const slidesData = [
   {
     id: 45,
     category: "PART 5: 素養導向情境題",
-    tag: "素養題 10",
+    tag: "素養題 10 (完成將自動同步成績)",
     title: "【素養情境題 10】兒少社群發表公共議題言論",
     subtitle: "網路言論自由 vs 資訊與表達自由 (Article 13)",
     icon: "fa-hashtag",

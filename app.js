@@ -5,6 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSlideIndex = 0;
   const totalSlides = slidesData.length;
   let userQuizAnswers = {}; // { slideId: { selectedOption: number, isCorrect: boolean } }
+  let hasAutoSubmitted = false; // 是否已自動同步至 Google Sheet
+
+  // 學生個人資訊 (姓名與學號)
+  let studentInfo = {
+    name: localStorage.getItem("crc_student_name") || "",
+    studentId: localStorage.getItem("crc_student_id") || ""
+  };
 
   // 自動輪播狀態
   let isAutoplay = false;
@@ -59,6 +66,20 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sheetWebAppUrl) {
     sheetWebAppUrl.value = googleSheetEndpoint;
   }
+
+  // 保存封面填寫的學生個人資訊
+  window.saveStudentInfo = function() {
+    const nameEl = document.getElementById("coverStudentName");
+    const idEl = document.getElementById("coverStudentId");
+    if (nameEl) {
+      studentInfo.name = nameEl.value.trim();
+      localStorage.setItem("crc_student_name", studentInfo.name);
+    }
+    if (idEl) {
+      studentInfo.studentId = idEl.value.trim();
+      localStorage.setItem("crc_student_id", studentInfo.studentId);
+    }
+  };
 
   // 全域換頁函式 (提供 HTML onclick 與 EventListeners 調用)
   window.goToSlide = function(index) {
@@ -187,6 +208,16 @@ document.addEventListener("DOMContentLoaded", () => {
       renderContentSlide(slide);
     }
 
+    // 如果回到 Slide 1，帶入先前保存的姓名學號
+    if (slide.id === 1) {
+      setTimeout(() => {
+        const nameEl = document.getElementById("coverStudentName");
+        const idEl = document.getElementById("coverStudentId");
+        if (nameEl && studentInfo.name) nameEl.value = studentInfo.name;
+        if (idEl && studentInfo.studentId) idEl.value = studentInfo.studentId;
+      }, 50);
+    }
+
     // 重新觸發換頁淡入過渡動畫
     slideContainer.classList.remove("slide-anim");
     void slideContainer.offsetWidth; // 強制 DOM 重繪
@@ -283,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // 4. 處理測驗選擇
+  // 4. 處理測驗選擇與全答完自動串接 Google Sheet
   window.handleQuizSelect = function (slideId, optionIndex) {
     if (userQuizAnswers[slideId]) return; // 已回答過
 
@@ -298,10 +329,68 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 重新渲染畫面呈現解析
     renderSlide(currentSlideIndex);
+
+    // 檢查是否已完成全部 10 題素養試題
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    const answeredCount = Object.keys(userQuizAnswers).length;
+
+    if (answeredCount >= quizSlides.length && !hasAutoSubmitted) {
+      hasAutoSubmitted = true;
+      // 延遲 1.5 秒讓使用者看到第 10 題解析後自動同步
+      setTimeout(() => {
+        window.autoSubmitQuizToGoogleSheet();
+      }, 1500);
+    }
+  };
+
+  // 當全選題完成時，自動發送至 Google Sheet
+  window.autoSubmitQuizToGoogleSheet = function() {
+    const quizSlides = slidesData.filter((s) => s.type === "quiz");
+    let correctCount = 0;
+    let quizDetails = [];
+    quizSlides.forEach((s) => {
+      const ans = userQuizAnswers[s.id];
+      if (ans) {
+        if (ans.isCorrect) correctCount++;
+        quizDetails.push(`第${s.id}頁:${ans.isCorrect ? '正確' : '錯誤'}`);
+      } else {
+        quizDetails.push(`第${s.id}頁:未作答`);
+      }
+    });
+
+    const score = correctCount * 10;
+    const name = studentInfo.name || "匿名學生";
+    const className = studentInfo.studentId || "未填寫學號";
+
+    const payload = {
+      name: name,
+      className: className,
+      score: `${score} 分`,
+      correctCount: correctCount,
+      feedback: "完成全部 10 題素養測驗（自動同步）",
+      details: quizDetails.join("; ")
+    };
+
+    const targetUrl = localStorage.getItem("crc_google_sheet_url") || DEFAULT_GAS_URL;
+
+    fetch(targetUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      window.showToast(`🎉 恭喜！您已完成 10 題素養測驗，得分 ${score} 分！成績已自動同步至 Google Sheet！`);
+    }).catch(() => {
+      window.showToast(`🎉 恭喜完成 10 題素養測驗，得分 ${score} 分！紀錄已發送至 Google Sheet。`);
+    });
   };
 
   // 5. Google Sheet 串接對話框控制與資料計算
   window.openGoogleSheetModal = function() {
+    // 預先填入封面記錄的姓名學號
+    if (sheetStudentName && studentInfo.name) sheetStudentName.value = studentInfo.name;
+    if (sheetClassName && studentInfo.studentId) sheetClassName.value = studentInfo.studentId;
+
     // 計算測驗成績
     const quizSlides = slidesData.filter((s) => s.type === "quiz");
     let correctCount = 0;
@@ -347,14 +436,14 @@ document.addEventListener("DOMContentLoaded", () => {
       toastNotification.style.opacity = "0";
       setTimeout(() => {
         toastNotification.style.display = "none";
-      }, 300);
-    }, 3500);
+      }, 5000);
+    }, 5000);
   };
 
   // 傳送資料至 Google Sheet
   window.submitDataToGoogleSheet = function() {
-    const name = sheetStudentName ? sheetStudentName.value.trim() : "";
-    const className = sheetClassName ? sheetClassName.value.trim() : "";
+    const name = sheetStudentName ? sheetStudentName.value.trim() : studentInfo.name;
+    const className = sheetClassName ? sheetClassName.value.trim() : studentInfo.studentId;
     const feedback = sheetFeedbackText ? sheetFeedbackText.value.trim() : "";
     const customUrl = sheetWebAppUrl ? sheetWebAppUrl.value.trim() : "";
 
@@ -412,7 +501,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }).catch((err) => {
       console.error("Google Sheet 提交錯誤:", err);
-      // no-cors 下有時跨網域仍成功寫入
       window.closeGoogleSheetModal();
       window.showToast("🎉 已發送資料至您的 Google Sheet 試算表！");
       if (submitToSheetBtn) {
