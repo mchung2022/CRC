@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const slideStage = document.getElementById("slideStage");
   const slideListContainer = document.getElementById("slideList");
   const modalGridContainer = document.getElementById("modalGrid");
-  const currentSlideNumEl = document.getElementById("currentSlideNum");
   const totalSlideNumEl = document.getElementById("totalSlideNum");
   const jumpInput = document.getElementById("jumpInput");
   const progressBarFill = document.getElementById("progressBarFill");
@@ -37,11 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const autoplaySpeedSelect = document.getElementById("autoplaySpeedSelect");
   const autoplayStatusBadge = document.getElementById("autoplayStatusBadge");
 
-  totalSlideNumEl.textContent = totalSlides;
-  jumpInput.max = totalSlides;
+  if (totalSlideNumEl) totalSlideNumEl.textContent = totalSlides;
+  if (jumpInput) jumpInput.max = totalSlides;
 
   // 1. 初始化側邊欄選單
   function renderSidebar(filterQuery = "") {
+    if (!slideListContainer) return;
     slideListContainer.innerHTML = "";
     slidesData.forEach((slide, index) => {
       if (filterQuery) {
@@ -71,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2. 初始化總覽 Modal 網格
   function renderModalGrid() {
+    if (!modalGridContainer) return;
     modalGridContainer.innerHTML = "";
     slidesData.forEach((slide, index) => {
       const card = document.createElement("div");
@@ -98,18 +99,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. 渲染當前簡報頁面
   function renderSlide(index) {
     const slide = slidesData[index];
-    if (!slide) return;
+    if (!slide || !slideContainer) return;
 
     currentSlideIndex = index;
-    jumpInput.value = slide.id;
+    if (jumpInput) jumpInput.value = slide.id;
 
     // 更新進度條
-    const progressPercent = ((index + 1) / totalSlides) * 100;
-    progressBarFill.style.width = `${progressPercent}%`;
+    if (progressBarFill) {
+      const progressPercent = ((index + 1) / totalSlides) * 100;
+      progressBarFill.style.width = `${progressPercent}%`;
+    }
 
     // 按鈕狀態更新
-    prevBtn.disabled = index === 0;
-    nextBtn.disabled = index === totalSlides - 1 && !isAutoplay;
+    if (prevBtn) prevBtn.disabled = index === 0;
+    if (nextBtn) nextBtn.disabled = index === totalSlides - 1 && !isAutoplay;
 
     // 如果是 Quiz 類型，調用渲染 Quiz
     if (slide.type === "quiz") {
@@ -119,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 更新側邊欄與 Modal 亮顯狀態
-    renderSidebar(searchInput.value);
+    renderSidebar(searchInput ? searchInput.value : "");
   }
 
   // 渲染一般圖文簡報
@@ -286,15 +289,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateAutoplayUI() {
+    if (!autoplayBtn || !playPauseNavBtn || !autoplayStatusBadge) return;
     const playIcon = autoplayBtn.querySelector("i");
     if (isAutoplay) {
-      playIcon.className = "fa-solid fa-pause";
+      if (playIcon) playIcon.className = "fa-solid fa-pause";
       autoplayBtn.classList.add("active");
       playPauseNavBtn.classList.add("active");
       playPauseNavBtn.innerHTML = '<i class="fa-solid fa-pause"></i> 暫停輪播';
       autoplayStatusBadge.classList.add("active");
     } else {
-      playIcon.className = "fa-solid fa-play";
+      if (playIcon) playIcon.className = "fa-solid fa-play";
       autoplayBtn.classList.remove("active");
       playPauseNavBtn.classList.remove("active");
       playPauseNavBtn.innerHTML = '<i class="fa-solid fa-play"></i> 自動輪播';
@@ -303,46 +307,56 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 7. 事件監聽設定
-  autoplayBtn.addEventListener("click", toggleAutoplay);
-  playPauseNavBtn.addEventListener("click", toggleAutoplay);
+  if (autoplayBtn) autoplayBtn.addEventListener("click", toggleAutoplay);
+  if (playPauseNavBtn) playPauseNavBtn.addEventListener("click", toggleAutoplay);
 
-  autoplaySpeedSelect.addEventListener("change", (e) => {
-    autoplaySpeed = parseInt(e.target.value);
-    if (isAutoplay) {
-      resetAutoplayTimer();
-    }
-  });
+  if (autoplaySpeedSelect) {
+    autoplaySpeedSelect.addEventListener("change", (e) => {
+      autoplaySpeed = parseInt(e.target.value);
+      if (isAutoplay) {
+        resetAutoplayTimer();
+      }
+    });
+  }
 
-  prevBtn.addEventListener("click", () => {
-    prevSlide();
-    if (isAutoplay) resetAutoplayTimer();
-  });
-
-  nextBtn.addEventListener("click", () => {
-    nextSlide();
-    if (isAutoplay) resetAutoplayTimer();
-  });
-
-  jumpInput.addEventListener("change", (e) => {
-    const val = parseInt(e.target.value);
-    if (!isNaN(val) && val >= 1 && val <= totalSlides) {
-      goToSlide(val - 1);
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      prevSlide();
       if (isAutoplay) resetAutoplayTimer();
-    }
-  });
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      nextSlide();
+      if (isAutoplay) resetAutoplayTimer();
+    });
+  }
+
+  if (jumpInput) {
+    jumpInput.addEventListener("change", (e) => {
+      const val = parseInt(e.target.value);
+      if (!isNaN(val) && val >= 1 && val <= totalSlides) {
+        goToSlide(val - 1);
+        if (isAutoplay) resetAutoplayTimer();
+      }
+    });
+  }
 
   // 觸控滑動手勢支援 (Touch Swipe on Mobile/Tablet)
   let touchStartX = 0;
   let touchEndX = 0;
 
-  slideStage.addEventListener("touchstart", (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-  }, { passive: true });
+  if (slideStage) {
+    slideStage.addEventListener("touchstart", (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
 
-  slideStage.addEventListener("touchend", (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  }, { passive: true });
+    slideStage.addEventListener("touchend", (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+  }
 
   function handleSwipe() {
     const swipeThreshold = 50;
@@ -377,51 +391,62 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 側邊欄切換
-  toggleSidebarBtn.addEventListener("click", () => {
-    sidebar.classList.toggle("collapsed");
-  });
+  if (toggleSidebarBtn && sidebar) {
+    toggleSidebarBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("collapsed");
+    });
+  }
 
   // 搜尋功能
-  searchInput.addEventListener("input", (e) => {
-    renderSidebar(e.target.value);
-  });
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      renderSidebar(e.target.value);
+    });
+  }
 
   // Overview Modal 控制
   function openOverviewModal() {
     renderModalGrid();
-    overviewModal.classList.add("active");
+    if (overviewModal) overviewModal.classList.add("active");
   }
 
   function closeOverviewModal() {
-    overviewModal.classList.remove("active");
+    if (overviewModal) overviewModal.classList.remove("active");
   }
 
-  overviewBtn.addEventListener("click", openOverviewModal);
-  closeModalBtn.addEventListener("click", closeOverviewModal);
-  overviewModal.addEventListener("click", (e) => {
-    if (e.target === overviewModal) closeOverviewModal();
-  });
+  if (overviewBtn) overviewBtn.addEventListener("click", openOverviewModal);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeOverviewModal);
+  if (overviewModal) {
+    overviewModal.addEventListener("click", (e) => {
+      if (e.target === overviewModal) closeOverviewModal();
+    });
+  }
 
   // 主題切換 (Dark / Light)
-  themeToggleBtn.addEventListener("click", () => {
-    const currentTheme = document.documentElement.getAttribute("data-theme");
-    const newTheme = currentTheme === "light" ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", newTheme);
-    themeToggleBtn.querySelector("i").className = newTheme === "light" ? "fa-solid fa-sun" : "fa-solid fa-moon";
-  });
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme = currentTheme === "light" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      const icon = themeToggleBtn.querySelector("i");
+      if (icon) icon.className = newTheme === "light" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+    });
+  }
 
   // 全螢幕切換
-  fullscreenBtn.addEventListener("click", () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error("全螢幕切換失敗:", err);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error("全螢幕切換失敗:", err);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
       }
-    }
-  });
+    });
+  }
 
   // 初始化預設啟動第一頁
   renderSidebar();
