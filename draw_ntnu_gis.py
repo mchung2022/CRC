@@ -322,7 +322,7 @@ def draw_map():
     plt.tight_layout()
     
     # Save Image
-    output_filename = "ntnu_main_campus_landscape.png"
+    output_filename = "ntnu_main_campus_landscape.jpg"
     plt.savefig(output_filename, dpi=300, bbox_inches='tight', facecolor=colors["bg"])
     plt.close()
     
